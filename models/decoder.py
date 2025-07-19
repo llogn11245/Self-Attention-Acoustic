@@ -47,28 +47,27 @@ class AcousticDecoder(nn.Module):
 
         outputs = []
         embedded = self.embedding(decoder_input)  # [B, max_len, embed]
-        print(f"Embedded shape: {embedded.shape}")
         for t in range(max_len):
             rnn_input = torch.cat([embedded[:, t, :], context], dim=1)
             h[0], c[0] = self.rnn[0](rnn_input, (h[0], c[0]))
             for i in range(1, self.num_layers):
                 h[i], c[i] = self.rnn[i](h[i-1], (h[i], c[i]))
             
-            query = h[-1].unsqueeze(1)  # [B, 1, hidden]
-            key = value = encoder_outputs  # [batch, time, hidden]
-            print(f"Query shape: {query.shape}, Key shape: {key.shape}, Value shape: {value.shape}")
+            query = h[-1].unsqueeze(1).unsqueeze(1)  # [B, 1, 1, hidden]
+            key = value = encoder_outputs.unsqueeze(1)  # [batch, 1, time, hidden]
             if encoder_mask is not None:
                 attn_mask = encoder_mask.unsqueeze(1)  # [B, 1, time]
             else:
                 attn_mask = None
                 
             context, attn = self.attention(query, key, value, mask=attn_mask)
+            context = context.squeeze(1)  # [B, 1, hidden]
             context = context.squeeze(1)  # [B, hidden]
             char_input = torch.cat([h[-1], context], dim=1)
             output = self.mlp(char_input)
             outputs.append(output)
+
         logits = torch.stack(outputs, dim=1)  # [batch, max_len, vocab_size]
-        
         return logits  # [B, max_len, vocab]
     
 def build_decoder(config):

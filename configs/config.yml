@@ -14,9 +14,9 @@ model:
     d_hidden: 512       
     dropout: 0.3
   dec: 
-    embed_dim: 80
+    embed_dim: 64
     d_hidden: 512
-    num_layers: 2
+    num_layers: 1
     dropout: 0.3
   vocab_size: 4866
   feature_dim: 80   # sync with dataset.py

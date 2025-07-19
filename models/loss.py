@@ -13,7 +13,6 @@ class CTCLoss(nn.Module):
         log_probs = F.log_softmax(logits, dim=-1)  # [B, T, Vocab]
         
         log_probs = log_probs.transpose(0, 1)  # Now [T, B, Vocab]
-        
         input_lengths = input_lengths
         target_lengths = target_lengths
         

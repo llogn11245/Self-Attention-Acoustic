@@ -9,14 +9,13 @@ class AcousticEncoder(nn.Module):
         self.mha = MultiHeadAttention(n_head, d_model, d_k, d_v, dropout)
         self.ffn = PositionwiseFeedForward(d_model, d_hidden, dropout)
         self.pos_enc = PositionalEncoding(d_model)
+        self.linear = nn.Linear(d_model, d_hidden)
     
     def forward(self, x, mask=None):
         x = self.pos_enc(x)  
         x, attn = self.mha(x, x, x, mask)
         x = self.ffn(x)
-
-        print(f"Encoder output shape: {x.shape}")
-        print(f"Attention shape: {attn.shape}")
+        x = self.linear(x)
         return x, attn 
     
 def build_encoder(config):

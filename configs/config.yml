@@ -30,7 +30,7 @@ model:
 
 training:
   epochs: 100
-  batch_size: 2
+  batch_size: 8
   save_path: "save_folder"
   train_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/train_w2i.json"
   dev_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/test_w2i.json"

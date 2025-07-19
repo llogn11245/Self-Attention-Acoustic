@@ -87,7 +87,7 @@ def evaluate(model, dataloader, criterion, device):
             text_len = batch["text_len"].to(device)
             decoder_input = batch["decoder_input"].to(device)
 
-            output = model(speech, decoder_input.int(), fbank_len.long(), text_len.long())
+            output = model(speech, fbank_len.long(), decoder_input, text_len.long(), speech_mask)
             loss = criterion(output, target_text, fbank_len, text_len)
 
             total_loss += loss.item()

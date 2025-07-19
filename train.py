@@ -2,7 +2,7 @@ import torch
 from utils.dataset import Speech2Text, speech_collate_fn
 from models.model import AcousticModel
 from tqdm import tqdm
-from models.loss import CTCLoss
+from models.loss import CrossEntropyLoss
 import argparse
 import yaml
 import os 
@@ -11,7 +11,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 import logging
 
 # Cấu hình logger
-log_file = "workspace/rna/conv-rnnt/conv_rnnt_log.txt"
+log_file = "saa.log"
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(message)s",
@@ -57,9 +57,8 @@ def train_one_epoch(model, dataloader, optimizer, criterion, device):
         text_len = batch["text_len"].to(device)
         target_text = batch["text"].to(device)
         decoder_input = batch["decoder_input"].to(device)
-
         optimizer.zero_grad()
-        output = model(speech, decoder_input.int(), fbank_len.long(), text_len.long())
+        output = model(speech, fbank_len.long(), decoder_input, text_len.long(), speech_mask)
         loss = criterion(output, target_text, fbank_len, text_len)
         loss.backward()
         optimizer.step()
@@ -145,7 +144,7 @@ def main():
     model.to(device)
 
     # ==== Loss ====
-    criterion = CTCLoss(config["model"]["blank_id"])
+    criterion = CrossEntropyLoss(config["model"]["blank_id"])
 
     # ==== Optimizer ====
     optimizer = Optimizer(model.parameters(), config['optim'])

@@ -37,7 +37,8 @@ class AcousticDecoder(nn.Module):
             encoder_outputs: [batch, time, hidden]
             encoder_mask: [batch, time] (mask cho encoder)
         """
-        batch_size, max_len = decoder_input.size()
+        max_len = decoder_input.size(1)
+        batch_size = decoder_input.size(0)
 
         h = [torch.zeros(batch_size, self.hidden_size).to(encoder_outputs.device) 
              for _ in range(self.num_layers)]

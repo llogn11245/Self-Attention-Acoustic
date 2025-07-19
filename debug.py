@@ -1,7 +1,7 @@
 import torch
 from utils.dataset import Speech2Text, speech_collate_fn
 from models.model import AcousticModel
-from models.loss import CTCLoss
+from models.loss import CrossEntropyLoss
 import argparse
 import yaml
 import os
@@ -61,7 +61,7 @@ def debug_batch(model, batch, criterion, device, is_training=True):
     #             break  # Print only one parameter's gradient for brevity
 
     # return loss.item()
-    return 1
+    return loss
 
 def main():
     parser = argparse.ArgumentParser()
@@ -80,7 +80,7 @@ def main():
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=training_cfg['batch_size'],
-        shuffle=False,
+        shuffle=True,
         collate_fn=speech_collate_fn
     )
 
@@ -90,7 +90,7 @@ def main():
     model.to(device)
 
     # ==== Loss ====
-    criterion = CTCLoss(config["rnnt_loss"]["blank"])
+    criterion = CrossEntropyLoss(config["rnnt_loss"]["blank"])
 
     # ==== Get one batch ====
     # Get a batch from the training set to debug

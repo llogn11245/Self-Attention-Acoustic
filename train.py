@@ -43,7 +43,7 @@ def reload_model(model, optimizer, checkpoint_path, model_name):
     return past_epoch + 1, model, optimizer
 
 
-def train_one_epoch(model, dataloader, optimizer, criterion, device):
+def train_one_epoch(model, dataloader, optimizer, criterion, device, scheduler):
     model.train()
     total_loss = 0.0
 
@@ -57,18 +57,24 @@ def train_one_epoch(model, dataloader, optimizer, criterion, device):
         text_len = batch["text_len"].to(device)
         target_text = batch["text"].to(device)
         decoder_input = batch["decoder_input"].to(device)
+
         optimizer.zero_grad()
+
         output = model(speech, fbank_len.long(), decoder_input, text_len.long(), speech_mask)
+
         loss = criterion(output, target_text, fbank_len, text_len)
         loss.backward()
+
         optimizer.step()
+
+        curr_lr, _ = scheduler(optimizer.optimizer)
 
         total_loss += loss.item()
         progress_bar.set_postfix(batch_loss=loss.item())
 
     avg_loss = total_loss / len(dataloader)
-    logging.info(f"Average training loss: {avg_loss:.4f}")
-    return avg_loss
+    print(f"Average training loss: {avg_loss:.4f}")
+    return avg_loss, curr_lr
 
 
 def evaluate(model, dataloader, criterion, device):
@@ -94,7 +100,7 @@ def evaluate(model, dataloader, criterion, device):
             progress_bar.set_postfix(batch_loss=loss.item())
 
     avg_loss = total_loss / len(dataloader)
-    logging.info(f"Average validation loss: {avg_loss:.4f}")
+    print(f"Average validation loss: {avg_loss:.4f}")
     return avg_loss
 
 
@@ -150,13 +156,19 @@ def main():
     optimizer = Optimizer(model.parameters(), config['optim'])
 
     # ==== Scheduler ====
-    scheduler = ReduceLROnPlateau(
-        optimizer.optimizer,  # because you're using a wrapper class
-        mode='min',
-        factor=0.5,
-        patience=2,
-        # verbose=True
-    )
+    # scheduler = ReduceLROnPlateau(
+    #     optimizer.optimizer,  # because you're using a wrapper class
+    #     mode='min',
+    #     factor=0.5,
+    #     patience=2,
+    # )
+    if not config['training']['reload']:
+        scheduler = NoamScheduler(
+            n_warmup_steps=config['scheduler']['n_warmup_steps'],
+            lr_initial=config['scheduler']['lr_initial']
+        )
+    else:
+        scheduler = NoamScheduler.load(config['training']['save_path'] + '/scheduler.ckpt')
 
     # ==== Reload checkpoint if needed ====
     start_epoch = 1
@@ -168,10 +180,10 @@ def main():
     num_epochs = training_cfg["epochs"]
 
     for epoch in range(start_epoch, num_epochs + 1):
-        train_loss = train_one_epoch(model, train_loader, optimizer, criterion, device)
+        train_loss, lr = train_one_epoch(model, train_loader, optimizer, criterion, device, scheduler)
         val_loss = evaluate(model, dev_loader, criterion, device)
 
-        logging.info(f"Epoch {epoch}: Train Loss = {train_loss:.4f}, Val Loss = {val_loss:.4f}")
+        logging.info(f"Epoch {epoch}: Train Loss = {train_loss:.4f}, Val Loss = {val_loss:.4f}, LR = {lr:6f}")
 
         # Save model checkpoint
         model_filename = os.path.join(
@@ -185,14 +197,7 @@ def main():
             'optimizer_state_dict': optimizer.state_dict(),
         }, model_filename)
 
-        # Step scheduler with validation loss
-        scheduler.step(val_loss)
-
-        # Early stopping nếu lr quá nhỏ
-        current_lr = optimizer.optimizer.param_groups[0]["lr"]
-        if current_lr < 1e-6:
-            logging.info('Learning rate quá thấp. Kết thúc training.')
-            break
+        scheduler.save(config['training']['save_path'] + '/scheduler.ckpt')
 
 
 if __name__ == "__main__":

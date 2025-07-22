@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from models.model import AcousticModel
 from utils.dataset import Speech2Text, speech_collate_fn
 from jiwer import wer, cer
+from contextlib import contextmanager
 
 def load_config(path):
     with open(path, 'r') as f:
@@ -23,10 +24,18 @@ def ids_to_text(ids, itos, eos_id=None):
         tokens.append(token)
     return ' '.join(tokens)
 
+@contextmanager
+def optional_file(filename):
+    if filename:
+        with open(filename, 'w', encoding='utf-8') as f:
+            yield f
+    else:
+        yield None
+
 def main():
     parser = argparse.ArgumentParser(description="Inference script for RNN-T speech-to-text model")
     parser.add_argument('--config', required=True, help='Path to YAML config file')
-    parser.add_argument('--output', default='results.csv', help='CSV file to save predictions')
+    parser.add_argument('--output', default=None, help='File to save predictions (optional)')
     args = parser.parse_args()
 
     full_cfg = load_config(args.config)
@@ -60,7 +69,7 @@ def main():
     pred_texts = []
     true_texts = []
 
-    with open(args.output, 'w', encoding='utf-8') as fout:
+    with optional_file(args.output) as fout:
         for batch in loader:
             speech = batch["fbank"].to(device)
             target_text = batch["text"].to(device)
@@ -87,11 +96,15 @@ def main():
                 true_texts.append(true_text)
                 print(f"Predict text: {pred_text}")
                 print(f"Ground truth: {true_text}")
-                fout.write(f"Predict text: {pred_text}\n")
-                fout.write(f"Ground truth: {true_text}\n")
-                fout.write("---------------\n")
+                if fout and pred_text:
+                    fout.write(f"Predict text: {pred_text}\n")
+                    fout.write(f"Ground truth: {true_text}\n")
+                    fout.write("---------------\n")
 
-    print(f"Inference complete. Results saved to {args.output}")
+    if args.output:
+        print(f"Inference complete. Results saved to {args.output}")
+    else:
+        print("Inference complete. Results not saved to file.")
 
     #===TÍNH WER VÀ CER===
     overall_wer = wer(true_texts, pred_texts)
@@ -101,7 +114,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-# python /data/npl/Speech2Text/rna/conv-rnnt/inference.py \
-#     --config /data/npl/Speech2Text/rna/conv-rnnt/configs/conv_rnnt.yaml \
-#     --output /data/npl/Speech2Text/rna/conv-rnnt/predictions.txt 

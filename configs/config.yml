@@ -37,7 +37,7 @@ training:
   test_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/test_w2i.json"
   vocab_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/vocab_w2i.json"
   cmvn_stats : "workspace/rna/conv-rnnt/data/cmvn_stats.pt"
-  reload: True
+  reload: False
 
 optim:
   # type: sgd
@@ -52,6 +52,10 @@ optim:
   lr: 0.0003
   weight_decay: 0
   decay_rate: 0.5
+
+scheduler:
+  lr_initial: 0.001
+  n_warmup_steps: 10000
 
 rnnt_loss:
   blank: 4

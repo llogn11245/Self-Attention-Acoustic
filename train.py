@@ -7,7 +7,7 @@ import argparse
 import yaml
 import os 
 from models.optim import Optimizer
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from speechbrain.nnet.schedulers import NoamScheduler
 import logging
 
 # Cấu hình logger

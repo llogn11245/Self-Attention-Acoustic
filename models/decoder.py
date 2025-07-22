@@ -49,7 +49,7 @@ class AcousticDecoder(nn.Module):
 
         outputs = []
         embedded = self.embedding(decoder_input)  # [B, max_len, embed]
-        embedded = self.dropout(embedded)  # Apply dropout to target tokens
+        embedded = self.embed_dropout(embedded)  # Apply dropout to target tokens
         for t in range(max_len):
             rnn_input = torch.cat([embedded[:, t, :], context], dim=1)
             h[0], c[0] = self.rnn[0](rnn_input, (h[0], c[0]))

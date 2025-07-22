@@ -4,7 +4,7 @@ import yaml
 import argparse
 import torch
 from torch.utils.data import DataLoader
-from models.model import Transducer
+from models.model import AcousticModel
 from utils.dataset import Speech2Text, speech_collate_fn
 from jiwer import wer, cer
 
@@ -26,10 +26,6 @@ def ids_to_text(ids, itos, eos_id=None):
 def main():
     parser = argparse.ArgumentParser(description="Inference script for RNN-T speech-to-text model")
     parser.add_argument('--config', required=True, help='Path to YAML config file')
-    parser.add_argument('--checkpoint', required=True, help='Path to model checkpoint (.pth)')
-    parser.add_argument('--test_json', required=True, help='Path to test JSON data')
-    parser.add_argument('--vocab_json', required=True, help='Path to vocab JSON file')
-    parser.add_argument('--batch_size', type=int, default=1, help='Batch size for inference')
     parser.add_argument('--output', default='results.csv', help='CSV file to save predictions')
     args = parser.parse_args()
 
@@ -39,22 +35,25 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     #===Load Checkpoint===
-    checkpoint = torch.load(args.checkpoint, map_location=device)
+    checkpoint_path = os.path.join(full_cfg['training']['save_path'], f"SAA_epoch_8")
+    checkpoint = torch.load(checkpoint_path, map_location=device)
     state_dict = checkpoint.get('model_state_dict', checkpoint)
 
     #===Load Model===
-    model = Transducer(model_cfg)
+    model = AcousticModel(model_cfg)
     model.load_state_dict(state_dict)
     model.to(device)
     model.eval()
 
     #===Load Data===
-    dataset = Speech2Text(args.test_json, args.vocab_json, args.cmvn_stats)
+    dataset = Speech2Text(full_cfg['training']['test_path'], 
+                          full_cfg['training']['vocab_path'], 
+                          full_cfg['training']['cmvn_stats'])
     itos    = dataset.vocab.itos
     eos_id  = dataset.vocab.get_eos_token()
 
     loader = DataLoader(dataset,
-                        batch_size=args.batch_size,
+                        batch_size=1,
                         shuffle=False,
                         collate_fn=speech_collate_fn)
 
@@ -63,11 +62,19 @@ def main():
 
     with open(args.output, 'w', encoding='utf-8') as fout:
         for batch in loader:
-            fbanks     = batch['fbank'].to(device)
-            fbank_lens = batch['fbank_len'].to(device)
+            speech = batch["fbank"].to(device)
+            target_text = batch["text"].to(device)
+            speech_mask = batch["fbank_mask"].to(device)
+            text_mask = batch["text_mask"].to(device)
+            fbank_len = batch["fbank_len"].to(device)
+            text_len = batch["text_len"].to(device)
+            decoder_input = batch["decoder_input"].to(device)
 
             with torch.no_grad():
-                batch_preds = model.recognize(fbanks, fbank_lens)
+                batch_preds = model.recognize(enc_inputs=speech, 
+                                              speech_length=fbank_len, 
+                                              target_length=text_len, 
+                                              enc_mask=speech_mask)
 
             for i in range(len(batch_preds)):
                 pred_ids = batch_preds[i]
@@ -97,9 +104,4 @@ if __name__ == '__main__':
 
 # python /data/npl/Speech2Text/rna/conv-rnnt/inference.py \
 #     --config /data/npl/Speech2Text/rna/conv-rnnt/configs/conv_rnnt.yaml \
-#     --checkpoint /data/npl/Speech2Text/rna/conv-rnnt/0506_rnnt_datset_class_2/conv-rnnt_epoch_4 \
-#     --test_json /data/npl/Speech2Text/rna/transformer_transducer/data/test_w2i.json \
-#     --vocab_json /data/npl/Speech2Text/rna/transformer_transducer/data/vocab_w2i.json \
-#     --cmvn_stats /data/npl/Speech2Text/rna/zlinhtinh/cmvn_stats.pt \
-#     --batch_size 1 \
 #     --output /data/npl/Speech2Text/rna/conv-rnnt/predictions.txt 

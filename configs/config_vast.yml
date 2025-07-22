@@ -1,0 +1,62 @@
+audio_data:
+  type: "log"
+  sampling_rate: 16000
+  window_size: 0.02
+  window_stride: 0.01
+  window: 'hamming'
+
+model:
+  enc: 
+    n_head: 8           
+    d_model: 80        
+    d_k: 64             
+    d_v: 64             
+    d_hidden: 512       
+    dropout: 0.3
+  dec: 
+    embed_dim: 64
+    d_hidden: 512
+    num_layers: 1
+    dropout: 0.3
+  vocab_size: 4866
+  feature_dim: 80   # sync with dataset.py
+  name : 'SAA'
+  share_weight: False
+  pad_id: 0
+  sos_id: 1
+  eos_id: 2
+  blank_id: 4
+  
+
+training:
+  epochs: 100
+  batch_size: 8
+  save_path: "workspace/Self-Attention-Acoustic/saves"
+  train_path : "workspace/Self-Attention-Acoustic/configs/config.yml"
+  dev_path : "workspace/dataset/test_w2i.json"
+  test_path : "workspace/dataset/test_w2i.json"
+  vocab_path : "workspace/dataset/vocab_w2i.json"
+  cmvn_stats : "workspace/dataset/cmvn_stats.pt"
+  reload: False
+
+optim:
+  # type: sgd
+  # lr: 0.0005
+  # momentum: 0.9
+  # weight_decay: 0
+  # begin_to_adjust_lr: 60
+  # nesterov: None
+  # decay_rate: 0.5
+
+  type: adam
+  lr: 0.001
+  weight_decay: 0
+  decay_rate: 0.5
+
+scheduler:
+  lr_initial: 0.001
+  n_warmup_steps: 10000
+
+rnnt_loss:
+  blank: 4
+  reduction: "mean" 

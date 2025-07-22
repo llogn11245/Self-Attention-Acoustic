@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from .modules import ScaledDotProductAttention
 
 class AcousticDecoder(nn.Module):
-    def __init__(self, vocab_size, embedding_dim, hidden_size, num_layers, dropout=0.1, sos_id=1, eos_id=2, pad_id=0):
+    def __init__(self, vocab_size, embedding_dim, hidden_size, num_layers, embed_dropout=0.1, var_dropout=0.2, sos_id=1, eos_id=2, pad_id=0):
         super(AcousticDecoder, self).__init__()
         self.vocab_size = vocab_size
         self.embedding_dim = embedding_dim
@@ -28,7 +28,8 @@ class AcousticDecoder(nn.Module):
             nn.Tanh(),
             nn.Linear(hidden_size, vocab_size)
         )
-        self.dropout = nn.Dropout(dropout)
+        self.embed_dropout = nn.Dropout(embed_dropout)
+        self.var_dropout = nn.Dropout(var_dropout)
 
     def forward(self, decoder_input, encoder_outputs, encoder_mask=None):
         """
@@ -48,11 +49,13 @@ class AcousticDecoder(nn.Module):
 
         outputs = []
         embedded = self.embedding(decoder_input)  # [B, max_len, embed]
+        embedded = self.dropout(embedded)  # Apply dropout to target tokens
         for t in range(max_len):
             rnn_input = torch.cat([embedded[:, t, :], context], dim=1)
             h[0], c[0] = self.rnn[0](rnn_input, (h[0], c[0]))
             for i in range(1, self.num_layers):
                 h[i], c[i] = self.rnn[i](h[i-1], (h[i], c[i]))
+                h[i] = self.var_dropout(h[i])  # variational recurrent dropout
             
             query = h[-1].unsqueeze(1).unsqueeze(1)  # [B, 1, 1, hidden]
             key = value = encoder_outputs.unsqueeze(1)  # [batch, 1, time, hidden]
@@ -77,11 +80,13 @@ def build_decoder(config):
         embedding_dim = config['dec']['embed_dim']
         hidden_size = config['dec']['d_hidden']
         num_layers = config['dec']['num_layers']
-        dropout = config['dec']['dropout']
+        embed_dropout = config['dec']['embed_dropout']
+        var_dropout = config['dec']['var_dropout']
         sos_id = config['sos_id']
         eos_id = config['eos_id']
         pad_id = config['pad_id']
 
-        return AcousticDecoder(vocab_size, embedding_dim, hidden_size, num_layers, dropout, sos_id, eos_id, pad_id)
+        return AcousticDecoder(vocab_size, embedding_dim, hidden_size, num_layers, embed_dropout, var_dropout, 
+                               sos_id, eos_id, pad_id)
     except KeyError as e:
         raise ValueError(f"Missing configuration parameter: {e}")

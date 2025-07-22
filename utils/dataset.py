@@ -33,33 +33,33 @@ class Vocab:
     def __len__(self):
         return len(self.vocab)
 
-def compute_cmvn(dataset, sample_rate=16000):
-    mel_extractor = T.MelSpectrogram(
-        sample_rate=sample_rate,
-        n_fft=512,
-        win_length=int(0.032 * sample_rate),
-        hop_length=int(0.010 * sample_rate),
-        n_mels=192,
-        power=2.0
-    )
-    sum_feats = torch.zeros(192)
-    sum_squares = torch.zeros(192)
-    total_frames = 0
+# def compute_cmvn(dataset, sample_rate=16000):
+#     mel_extractor = T.MelSpectrogram(
+#         sample_rate=sample_rate,
+#         n_fft=512,
+#         win_length=int(0.032 * sample_rate),
+#         hop_length=int(0.010 * sample_rate),
+#         n_mels=192,
+#         power=2.0
+#     )
+#     sum_feats = torch.zeros(192)
+#     sum_squares = torch.zeros(192)
+#     total_frames = 0
 
-    for waveform in tqdm(dataset):  # dataset là list/tập của waveform tensors
-        with torch.no_grad():
-            mel = mel_extractor(waveform.unsqueeze(0))  # [1, 80, T]
-            log_mel = torchaudio.functional.amplitude_to_DB(
-                mel, multiplier=10.0, amin=1e-10, db_multiplier=0
-            ).squeeze(0)  # [80, T]
+#     for waveform in tqdm(dataset):  # dataset là list/tập của waveform tensors
+#         with torch.no_grad():
+#             mel = mel_extractor(waveform.unsqueeze(0))  # [1, 80, T]
+#             log_mel = torchaudio.functional.amplitude_to_DB(
+#                 mel, multiplier=10.0, amin=1e-10, db_multiplier=0
+#             ).squeeze(0)  # [80, T]
 
-            total_frames += log_mel.shape[1]
-            sum_feats += log_mel.sum(dim=1)
-            sum_squares += (log_mel ** 2).sum(dim=1)
+#             total_frames += log_mel.shape[1]
+#             sum_feats += log_mel.sum(dim=1)
+#             sum_squares += (log_mel ** 2).sum(dim=1)
 
-    mean = sum_feats / total_frames
-    std = (sum_squares / total_frames - mean**2).sqrt()
-    return mean, std
+#     mean = sum_feats / total_frames
+#     std = (sum_squares / total_frames - mean**2).sqrt()
+#     return mean, std
 
 class Speech2Text(Dataset):
     def __init__(self, json_path, vocab_path, cmvn_stats= None):
@@ -84,7 +84,7 @@ class Speech2Text(Dataset):
             n_fft=512,
             win_length=int(0.032 * sample_rate),
             hop_length=int(0.010 * sample_rate),
-            n_mels=80,
+            n_mels=160,
             power=2.0
         )
 

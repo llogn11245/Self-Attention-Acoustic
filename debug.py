@@ -29,10 +29,14 @@ def debug_batch(model, batch, criterion, device, is_training=True):
     print(f"Speech shape: {speech.shape}")
     print(f"Speech mask shape: {speech_mask.shape}")
     print(f"Text mask shape: {text_mask.shape}")
+    print(f"Text_mask: {text_mask}")
     print(f"Fbank len shape: {fbank_len.shape}")
     print(f"Text len shape: {text_len.shape}")
+    print(f"Target len: {text_len}")
     print(f"Target text shape: {target_text.shape}")
+    print(f"Target text: {target_text}")
     print(f"Decoder input shape: {decoder_input.shape}")
+    print(f"Decoder input: {decoder_input}")
     print(f"================MODEL================")
     # Set model mode
     if is_training:

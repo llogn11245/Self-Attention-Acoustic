@@ -8,9 +8,9 @@ audio_data:
 model:
   enc: 
     n_head: 8           
-    d_model: 160        
-    d_k: 64             
-    d_v: 64             
+    d_model: 40        
+    d_k: 5             
+    d_v: 5             
     d_hidden: 128       
     dropout: 0.2
   dec: 
@@ -20,7 +20,7 @@ model:
     embed_dropout: 0.1
     var_dropout: 0.2
   vocab_size: 4866
-  feature_dim: 160   # sync with dataset.py
+  feature_dim: 40   # sync with dataset.py
   name : 'SAA'
   share_weight: False
   pad_id: 0

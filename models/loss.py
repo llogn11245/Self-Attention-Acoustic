@@ -16,18 +16,6 @@ class CrossEntropyLoss(nn.Module):
         self.reduction = reduction
 
     def forward(self, logits, targets, input_lengths=None, target_lengths=None):
-        """
-        Tính Cross Entropy Loss
-        
-        Args:
-            logits: Tensor [batch_size, sequence_length, vocab_size]
-            targets: Tensor [batch_size, sequence_length] chứa nhãn gốc
-            input_lengths: Độ dài thực của các chuỗi (không bắt buộc)
-            target_lengths: Độ dài mục tiêu (không bắt buộc)
-        
-        Returns:
-            loss: Giá trị loss đã được giảm kích thước
-        """
         # Chuyển đổi kích thước logits để phù hợp với CrossEntropyLoss
         # [B, T, C] -> [B, C, T] (theo yêu cầu của nn.CrossEntropyLoss)
         logits = logits.transpose(1, 2)  # [batch_size, vocab_size, sequence_length]

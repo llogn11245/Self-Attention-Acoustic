@@ -84,7 +84,7 @@ class Speech2Text(Dataset):
             n_fft=512,
             win_length=int(0.032 * sample_rate),
             hop_length=int(0.010 * sample_rate),
-            n_mels=160,
+            n_mels=40,
             power=2.0
         )
 
@@ -106,8 +106,8 @@ class Speech2Text(Dataset):
     def __getitem__(self, idx):
         current_item = self.data[idx]
         wav_path = current_item["wav_path"]
-        encoded_text = torch.tensor(current_item["encoded_text"] + [self.eos_token], dtype=torch.long)
-        decoder_input = torch.tensor([self.sos_token] + current_item["encoded_text"], dtype=torch.long)
+        encoded_text = torch.tensor([self.sos_token] + current_item["encoded_text"] + [self.eos_token], dtype=torch.long)
+        decoder_input = torch.tensor([self.sos_token] + current_item["encoded_text"] + [self.eos_token], dtype=torch.long)
         fbank = self.extract_from_path(wav_path).float()  # [T, 80]
         
         return {
@@ -115,7 +115,7 @@ class Speech2Text(Dataset):
             "fbank": fbank,              # [T_audio, 80]
             "text_len": len(encoded_text),
             "fbank_len": fbank.shape[0],
-            "decoder_input": decoder_input,  # [T_text + 1]
+            "decoder_input": decoder_input,  # [T_text + 2] (bắt đầu bằng SOS, kết thúc bằng EOS)
         }
     
 from torch.nn.utils.rnn import pad_sequence

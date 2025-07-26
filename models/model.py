@@ -43,7 +43,7 @@ class AcousticModel(nn.Module):
         token_list = []
         current_token = sos_id 
 
-        for _ in range(target_length - 1):  # -1 because we don't predict the EOS token
+        for _ in range(target_length-1):  # -1 because we don't predict the EOS token
             embedded = self.decoder.embedding(torch.tensor([current_token], device=device))
             rnn_input = torch.cat([embedded, context], dim=1)
 
@@ -71,5 +71,4 @@ class AcousticModel(nn.Module):
 
             current_token = predicted_token
 
-        # Trả về danh sách lồng nhau [token_list] để phù hợp với inference.py
         return [token_list]

@@ -44,7 +44,7 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     #===Load Checkpoint===
-    checkpoint_path = os.path.join(full_cfg['training']['save_path'], f"SAA_epoch_8")
+    checkpoint_path = os.path.join(full_cfg['training']['save_path'], f"SAA_epoch_7")
     checkpoint = torch.load(checkpoint_path, map_location=device)
     state_dict = checkpoint.get('model_state_dict', checkpoint)
 

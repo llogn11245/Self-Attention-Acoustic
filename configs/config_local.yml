@@ -38,6 +38,7 @@ training:
   test_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/test_w2i.json"
   vocab_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/vocab_w2i.json"
   cmvn_stats : "workspace/rna/conv-rnnt/data/cmvn_stats.pt"
+  log_path: "C:/paper/self-acoustic/logs"
   reload: False
 
 optim:

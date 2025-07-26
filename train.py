@@ -10,17 +10,6 @@ from models.optim import Optimizer
 from speechbrain.nnet.schedulers import NoamScheduler
 import logging
 
-# Cấu hình logger
-log_file = "saa.log"
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(message)s",
-    handlers=[
-        logging.FileHandler(log_file),
-        logging.StreamHandler()  # vẫn in ra màn hình
-    ]
-)
-
 def reload_model(model, optimizer, checkpoint_path, model_name):
     past_epoch = 0
     path_list = [path for path in os.listdir(checkpoint_path)]
@@ -116,6 +105,19 @@ def main():
 
     config = load_config(args.config)
     training_cfg = config['training']
+
+    # ==== Logger ====
+    if not os.path.exists(training_cfg['log_path']):
+        os.makedirs(training_cfg['log_path'])
+    log_file = training_cfg['log_path'] + '/saa.log'
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(message)s",
+        handlers=[
+            logging.FileHandler(log_file),
+            logging.StreamHandler()  # vẫn in ra màn hình
+        ]
+    )
 
     # ==== Load Dataset ====
     train_dataset = Speech2Text(

@@ -38,7 +38,7 @@ training:
   test_path : "workspace/dataset/test_w2i.json"
   vocab_path : "workspace/dataset/vocab_w2i.json"
   cmvn_stats : "workspace/dataset/cmvn_stats.pt"
-  log_path: "C:/paper/self-acoustic/logs"
+  log_path: "workspace/Self-Attention-Acoustic/logs"
   reload: False
 
 optim:

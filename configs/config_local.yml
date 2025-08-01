@@ -19,7 +19,7 @@ model:
     num_layers: 1
     embed_dropout: 0.1
     var_dropout: 0.2
-  vocab_size: 4866
+  vocab_size: 4866  # 4866 for vivos 7018 for vlsp
   feature_dim: 40   # sync with dataset.py
   name : 'SAA'
   share_weight: False
@@ -28,11 +28,12 @@ model:
   eos_id: 2
   blank_id: 4
   
-
+# Vivos
 training:
   epochs: 100
   batch_size: 8
-  save_path: "save_folder"
+  accumulation_steps: 4
+  save_path: "C:/paper/self-acoustic/save_folder"
   train_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/train_w2i.json"
   dev_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/test_w2i.json"
   test_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/test_w2i.json"
@@ -40,6 +41,20 @@ training:
   cmvn_stats : "workspace/rna/conv-rnnt/data/cmvn_stats.pt"
   log_path: "C:/paper/self-acoustic/logs"
   reload: False
+
+# VLSP
+# training:
+#   epochs: 100
+#   batch_size: 2
+#   accumulation_steps: 4
+#   save_path: "C:/paper/self-acoustic/save_folder"
+#   train_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/VLSP/train_w2i.json"
+#   dev_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/VLSP/val_w2i.json"
+#   test_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/VLSP/test_w2i.json"
+#   vocab_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/VLSP/vocab_w2i.json"
+#   cmvn_stats : "workspace/rna/conv-rnnt/data/cmvn_stats.pt"
+#   log_path: "C:/paper/self-acoustic/logs"
+#   reload: False
 
 optim:
   # type: sgd
@@ -51,13 +66,13 @@ optim:
   # decay_rate: 0.5
 
   type: adam
-  lr: 0.0003
+  lr: 0.001
   weight_decay: 0
   decay_rate: 0.5
 
 scheduler:
   lr_initial: 0.001
-  n_warmup_steps: 10000
+  n_warmup_steps: 1000
 
 rnnt_loss:
   blank: 4

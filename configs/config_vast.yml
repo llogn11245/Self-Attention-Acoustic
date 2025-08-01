@@ -31,7 +31,8 @@ model:
 
 training:
   epochs: 100
-  batch_size: 32
+  batch_size: 16
+  accumulation_steps: 4
   save_path: "workspace/Self-Attention-Acoustic/saves"
   train_path : "workspace/dataset/train_w2i.json"
   dev_path : "workspace/dataset/test_w2i.json"
@@ -57,7 +58,7 @@ optim:
 
 scheduler:
   lr_initial: 0.001
-  n_warmup_steps: 10000
+  n_warmup_steps: 1000
 
 rnnt_loss:
   blank: 4

@@ -25,19 +25,22 @@ def debug_batch(model, batch, criterion, device, is_training=True):
     decoder_input = batch["decoder_input"].to(device)
 
     # Print shapes
-    print(f"================INPUT================")
+    print(f"================AUDIO================")
     print(f"Speech shape: {speech.shape}")
+    print(f"Speech len shape: {fbank_len.shape}")
+    print(f"Speech len: {fbank_len}")
     print(f"Speech mask shape: {speech_mask.shape}")
-    print(f"Text mask shape: {text_mask.shape}")
-    print(f"Text_mask: {text_mask}")
-    print(f"Fbank len shape: {fbank_len.shape}")
-    print(f"Text len shape: {text_len.shape}")
+    print(f"Speech mask: {speech_mask}")
+    print(f"================TARGET================")
+    print(f"Target mask shape: {text_mask.shape}")
+    print(f"Target mask: {text_mask}")
+    print(f"Target len shape: {text_len.shape}")
     print(f"Target len: {text_len}")
     print(f"Target text shape: {target_text.shape}")
     print(f"Target text: {target_text}")
+    print(f"================MODEL================")
     print(f"Decoder input shape: {decoder_input.shape}")
     print(f"Decoder input: {decoder_input}")
-    print(f"================MODEL================")
     # Set model mode
     if is_training:
         model.train()
@@ -85,7 +88,9 @@ def main():
         train_dataset,
         batch_size=training_cfg['batch_size'],
         shuffle=True,
-        collate_fn=speech_collate_fn
+        collate_fn=speech_collate_fn,
+        num_workers=0,
+        pin_memory=True
     )
 
     # ==== Model ====

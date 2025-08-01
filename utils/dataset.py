@@ -71,6 +71,15 @@ class Speech2Text(Dataset):
         self.pad_token = self.vocab.get_pad_token()
         self.unk_token = self.vocab.get_unk_token()
         
+        self.mel_extractor = T.MelSpectrogram(
+            sample_rate=16000,
+            n_fft=512,
+            win_length=int(0.032 * 16000),
+            hop_length=int(0.010 * 16000),
+            n_mels=40,
+            power=2.0
+        )
+
         # stats = torch.load(cmvn_stats) 
         # self.cmvn_mean = stats['mean']
         # self.cmvn_std = stats['std']
@@ -79,16 +88,16 @@ class Speech2Text(Dataset):
         return len(self.data)
     
     def get_fbank(self, waveform, sample_rate=16000):
-        mel_extractor = T.MelSpectrogram(
-            sample_rate=sample_rate,
-            n_fft=512,
-            win_length=int(0.032 * sample_rate),
-            hop_length=int(0.010 * sample_rate),
-            n_mels=40,
-            power=2.0
-        )
+        # mel_extractor = T.MelSpectrogram(
+        #     sample_rate=sample_rate,
+        #     n_fft=512,
+        #     win_length=int(0.032 * sample_rate),
+        #     hop_length=int(0.010 * sample_rate),
+        #     n_mels=40,
+        #     power=2.0
+        # )
 
-        log_mel = mel_extractor(waveform.unsqueeze(0))
+        log_mel = self.mel_extractor(waveform.unsqueeze(0))
         log_mel = torchaudio.functional.amplitude_to_DB(log_mel, multiplier=10.0, amin=1e-10, db_multiplier=0)
         log_mel = log_mel.squeeze(0)
     
@@ -126,6 +135,7 @@ def calculate_mask(lengths, max_len):
     return mask
 
 def speech_collate_fn(batch):
+    batch = sorted(batch, key=lambda x: x['fbank_len'], reverse=True)
     decoder_outputs = [torch.tensor(item["decoder_input"]) for item in batch]
     texts = [item["text"] for item in batch]
     fbanks = [item["fbank"] for item in batch]

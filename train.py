@@ -32,13 +32,13 @@ def reload_model(model, optimizer, checkpoint_path, model_name):
     return past_epoch + 1, model, optimizer
 
 
-def train_one_epoch(model, dataloader, optimizer, criterion, device, scheduler):
+def train_one_epoch(model, dataloader, optimizer, criterion, device, scheduler, accum_steps=1):
     model.train()
     total_loss = 0.0
 
     progress_bar = tqdm(dataloader, desc="🔁 Training", leave=False)
 
-    for batch in progress_bar:
+    for id, batch in enumerate(progress_bar):
         speech = batch["fbank"].to(device)
         speech_mask = batch["fbank_mask"].to(device)
         text_mask = batch["text_mask"].to(device)
@@ -47,16 +47,17 @@ def train_one_epoch(model, dataloader, optimizer, criterion, device, scheduler):
         target_text = batch["text"].to(device)
         decoder_input = batch["decoder_input"].to(device)
 
-        optimizer.zero_grad()
-
         output = model(speech, fbank_len.long(), decoder_input, text_len.long(), speech_mask)
 
         loss = criterion(output, target_text, fbank_len, text_len)
         loss.backward()
 
-        optimizer.step()
+        if ((id + 1) % accum_steps == 0) or ((id + 1) == len(dataloader)):
+            optimizer.step()
 
-        curr_lr, _ = scheduler(optimizer.optimizer)
+            curr_lr, _ = scheduler(optimizer.optimizer)
+
+            optimizer.zero_grad()  
 
         total_loss += loss.item()
         progress_bar.set_postfix(batch_loss=loss.item())
@@ -130,7 +131,9 @@ def main():
         train_dataset,
         batch_size=training_cfg['batch_size'],
         shuffle=True,
-        collate_fn=speech_collate_fn
+        collate_fn=speech_collate_fn,
+        num_workers=0,
+        pin_memory=True
     )
 
     dev_dataset = Speech2Text(
@@ -143,7 +146,9 @@ def main():
         dev_dataset,
         batch_size=training_cfg['batch_size'],
         shuffle=True,
-        collate_fn=speech_collate_fn
+        collate_fn=speech_collate_fn,
+        num_workers=0,
+        pin_memory=True
     )
 
     # ==== Model ====
@@ -180,14 +185,17 @@ def main():
 
     # ==== Training loop ====
     num_epochs = training_cfg["epochs"]
+    accumulation_steps = training_cfg["accumulation_steps"]
 
     for epoch in range(start_epoch, num_epochs + 1):
-        train_loss, lr = train_one_epoch(model, train_loader, optimizer, criterion, device, scheduler)
+        train_loss, lr = train_one_epoch(model, train_loader, optimizer, criterion, device, scheduler, accumulation_steps)
         val_loss = evaluate(model, dev_loader, criterion, device)
 
         logging.info(f"Epoch {epoch}: Train Loss = {train_loss:.4f}, Val Loss = {val_loss:.4f}, LR = {lr:6f}")
 
         # Save model checkpoint
+        if not os.path.exists(training_cfg['save_path']):
+            os.makedirs(training_cfg['save_path'])
         model_filename = os.path.join(
             training_cfg['save_path'],
             f"{config['model']['name']}_epoch_{epoch}"

@@ -13,7 +13,7 @@ import logging
 def reload_model(model, optimizer, checkpoint_path, model_name):
     past_epoch = 0
     path_list = [path for path in os.listdir(checkpoint_path)]
-    print(path_list)
+    # print(path_list)
     if len(path_list) > 0:
         for path in path_list:
             try:
@@ -175,7 +175,11 @@ def main():
             lr_initial=config['scheduler']['lr_initial']
         )
     else:
-        scheduler = NoamScheduler.load(config['training']['save_path'] + '/scheduler.ckpt')
+        scheduler = NoamScheduler(
+            n_warmup_steps=config['scheduler']['n_warmup_steps'],
+            lr_initial=config['scheduler']['lr_initial']
+        )
+        scheduler.load(config['training']['save_path'] + '/scheduler.ckpt')
 
     # ==== Reload checkpoint if needed ====
     start_epoch = 1

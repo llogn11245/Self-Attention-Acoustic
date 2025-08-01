@@ -31,7 +31,7 @@ model:
 # Vivos
 training:
   epochs: 100
-  batch_size: 8
+  batch_size: 3
   accumulation_steps: 4
   save_path: "C:/paper/self-acoustic/save_folder"
   train_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/train_w2i.json"
@@ -40,7 +40,7 @@ training:
   vocab_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/vocab_w2i.json"
   cmvn_stats : "workspace/rna/conv-rnnt/data/cmvn_stats.pt"
   log_path: "C:/paper/self-acoustic/logs"
-  reload: False
+  reload: True
 
 # VLSP
 # training:

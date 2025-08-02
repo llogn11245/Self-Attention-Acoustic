@@ -58,7 +58,7 @@ optim:
 
 scheduler:
   lr_initial: 0.001
-  n_warmup_steps: 1000
+  n_warmup_steps: 15000
 
 rnnt_loss:
   blank: 4

@@ -76,7 +76,7 @@ class Speech2Text(Dataset):
             n_fft=512,
             win_length=int(0.032 * 16000),
             hop_length=int(0.010 * 16000),
-            n_mels=40,
+            n_mels=80,
             power=2.0
         )
 

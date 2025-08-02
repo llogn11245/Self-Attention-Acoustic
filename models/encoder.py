@@ -1,5 +1,5 @@
 from .atten import MultiHeadAttention
-from .modules import PositionalEncoding, PositionwiseFeedForward
+from .modules import PositionalEncoding, PositionwiseFeedForward, ResidualConnection, ResidualConnectionBase
 import torch
 import torch.nn as nn
 
@@ -10,11 +10,18 @@ class AcousticEncoder(nn.Module):
         self.ffn = PositionwiseFeedForward(d_model, d_hidden, dropout)
         self.pos_enc = PositionalEncoding(d_model)
         self.linear = nn.Linear(d_model, d_hidden)
-    
+
+        self.residual = ResidualConnection(d_model, dropout)
+        self.residual_mha = ResidualConnectionBase(d_model, dropout)
+
     def forward(self, x, mask=None):
         x = self.pos_enc(x)  
         x, attn = self.mha(x, x, x, mask)
-        x = self.ffn(x)
+        residual = x 
+
+        x = self.residual_mha(x, residual)
+        x = self.residual(x, self.ffn)
+
         x = self.linear(x)
         return x, attn 
     

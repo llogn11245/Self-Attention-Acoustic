@@ -33,13 +33,13 @@ training:
   epochs: 100
   batch_size: 3
   accumulation_steps: 4
-  save_path: "C:/paper/self-acoustic/save_folder"
-  train_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/train_w2i.json"
-  dev_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/test_w2i.json"
-  test_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/test_w2i.json"
-  vocab_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/vocab_w2i.json"
+  save_path: "/home/anhkhoa/Self-Attention-Acoustic/saves"
+  train_path : "/home/anhkhoa/transformer_transducer_speeQ/data/train.json"
+  dev_path : "/home/anhkhoa/transformer_transducer_speeQ/data/dev.json"
+  test_path : "/home/anhkhoa/transformer_transducer_speeQ/data/dev.json"
+  vocab_path : "/home/anhkhoa/transformer_transducer_speeQ/data/vocab.json"
   cmvn_stats : "workspace/rna/conv-rnnt/data/cmvn_stats.pt"
-  log_path: "C:/paper/self-acoustic/logs"
+  log_path: "/home/anhkhoa/Self-Attention-Acoustic/logs"
   reload: True
 
 # VLSP

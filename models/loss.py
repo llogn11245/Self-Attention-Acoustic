@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class CrossEntropyLoss(nn.Module):
-    def __init__(self, ignore_index=4, reduction="mean"):
+    def __init__(self, ignore_index=4, reduction="mean", label_smoothing=0.1):
         """
         Cross Entropy Loss cho bài toán sequence labeling
         
@@ -14,6 +14,7 @@ class CrossEntropyLoss(nn.Module):
         super(CrossEntropyLoss, self).__init__()
         self.ignore_index = ignore_index
         self.reduction = reduction
+        self.label_smoothing = label_smoothing
 
     def forward(self, logits, targets, input_lengths=None, target_lengths=None):
         # Chuyển đổi kích thước logits để phù hợp với CrossEntropyLoss
@@ -23,7 +24,8 @@ class CrossEntropyLoss(nn.Module):
         # Tính loss
         loss_fn = nn.CrossEntropyLoss(
             ignore_index=self.ignore_index,
-            reduction=self.reduction
+            reduction=self.reduction,
+            label_smoothing=self.label_smoothing
         )
         loss = loss_fn(logits, targets)
         

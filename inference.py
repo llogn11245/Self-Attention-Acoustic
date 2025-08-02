@@ -55,7 +55,7 @@ def main():
     model.eval()
 
     #===Load Data===
-    dataset = Speech2Text(full_cfg['training']['test_path'], 
+    dataset = Speech2Text(full_cfg['training']['train_path'], 
                           full_cfg['training']['vocab_path'], 
                           full_cfg['training']['cmvn_stats'])
     itos    = dataset.vocab.itos
@@ -96,6 +96,9 @@ def main():
                 true_texts.append(true_text)
                 print(f"Predict text: {pred_text}")
                 print(f"Ground truth: {true_text}")
+                wer_score = wer([true_text], [pred_text])
+                cer_score = cer([true_text], [pred_text])
+                print(f"WER: {wer_score:.4f}, CER: {cer_score:.4f}")
                 if fout and pred_text:
                     fout.write(f"Predict text: {pred_text}\n")
                     fout.write(f"Ground truth: {true_text}\n")

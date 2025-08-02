@@ -8,9 +8,9 @@ audio_data:
 model:
   enc: 
     n_head: 8           
-    d_model: 40        
-    d_k: 5             
-    d_v: 5             
+    d_model: 80        
+    d_k: 10             
+    d_v: 10             
     d_hidden: 128       
     dropout: 0.2
   dec: 
@@ -20,7 +20,7 @@ model:
     embed_dropout: 0.1
     var_dropout: 0.2
   vocab_size: 4866  # 4866 for vivos 7018 for vlsp
-  feature_dim: 40   # sync with dataset.py
+  feature_dim: 80   # sync with dataset.py
   name : 'SAA'
   share_weight: False
   pad_id: 0
@@ -32,14 +32,14 @@ model:
 training:
   epochs: 100
   batch_size: 3
-  accumulation_steps: 4
-  save_path: "/home/anhkhoa/Self-Attention-Acoustic/saves"
-  train_path : "/home/anhkhoa/transformer_transducer_speeQ/data/train.json"
-  dev_path : "/home/anhkhoa/transformer_transducer_speeQ/data/dev.json"
-  test_path : "/home/anhkhoa/transformer_transducer_speeQ/data/dev.json"
-  vocab_path : "/home/anhkhoa/transformer_transducer_speeQ/data/vocab.json"
+  accumulation_steps: 1
+  save_path: "C:/paper/self-acoustic/save_folder"
+  train_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/train_w2i.json"
+  dev_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/test_w2i.json"
+  test_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/test_w2i.json"
+  vocab_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/vocab_w2i.json"
   cmvn_stats : "workspace/rna/conv-rnnt/data/cmvn_stats.pt"
-  log_path: "/home/anhkhoa/Self-Attention-Acoustic/logs"
+  log_path: "C:/paper/self-acoustic/logs"
   reload: True
 
 # VLSP

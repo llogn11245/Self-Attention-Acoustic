@@ -20,7 +20,7 @@ class AcousticModel(nn.Module):
         
         return decoder_outputs
     
-    def recognize(self, enc_inputs, speech_length, target_length, enc_mask=None):
+    def recognize(self, enc_inputs, speech_length, target_length=100, enc_mask=None):
         """
         Greedy decoding for inference
         Args:

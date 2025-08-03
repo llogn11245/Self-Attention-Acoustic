@@ -16,7 +16,7 @@ class AcousticEncoder(nn.Module):
         )
 
     def forward(self, x, mask=None):
-        x = self.pos_enc(x)  
+        x = self.pos_enc(x)
         atten_out, _ = self.mha(x, x, x, mask)
 
         x = self.residual[0](x, atten_out)

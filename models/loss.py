@@ -48,6 +48,7 @@ class KLDivLoss(nn.Module):
 
         # print(f"shape logits: {logits.shape}")
         # print(f"shape targets: {target_probs.shape}")
+        # print(f"target_probs: {target_probs[0,:,:]}")
         # exit()
 
         # Tính KL Divergence

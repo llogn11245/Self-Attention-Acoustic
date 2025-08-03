@@ -31,7 +31,7 @@ class AcousticModel(nn.Module):
         Returns:
             list of lists: token IDs for each batch item
         """
-        encoder_outputs, _ = self.encoder(enc_inputs, enc_mask)
+        encoder_outputs = self.encoder(enc_inputs, enc_mask)
         batch_size = enc_inputs.size(0)
         device = enc_inputs.device
         sos_id = self.sos_id

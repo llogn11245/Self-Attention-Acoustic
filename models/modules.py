@@ -70,6 +70,7 @@ class PositionalEncoding(nn.Module):
     def __init__(self, d_model: int) -> None:
         super().__init__()
         self.d_model = d_model
+        self.linear = nn.Linear(2 * d_model, d_model)
     def get_pe(self, seq_len: int) -> torch.Tensor:
         # Create a matrix of shape (seq_len, d_model)
         pe = torch.zeros(seq_len, self.d_model)
@@ -89,7 +90,11 @@ class PositionalEncoding(nn.Module):
         # x is of shape (batch, seq_len, d_model)
         seq_len = x.size(1)
         pe = self.get_pe(seq_len).to(x.device)
-        x = x + pe
+        pe = pe.expand_as(x)
+
+        x = torch.cat([x, pe], dim= 2)
+        x = self.linear(x)
+
         return x
     
 class PositionwiseFeedForward(nn.Module):

@@ -24,53 +24,11 @@ class ScaledDotProductAttention(nn.Module):
         output = torch.matmul(attn, v)
 
         return output, attn
-
-class DotProductAttention(nn.Module):
-    r"""Dot product attention.
-    Given a set of vector values, and a vector query, attention is a technique
-    to compute a weighted sum of the values, dependent on the query.
-
-    NOTE: Here we use the terminology in Stanford cs224n-2018-lecture11.
-    """
-
-    def __init__(self):
-        super(DotProductAttention, self).__init__()
-        # TODO: move this out of this class?
-        # self.linear_out = nn.Linear(dim*2, dim)
-
-    def forward(self, queries, values):
-        """
-        Args:
-            queries: N x To x H
-            values : N x Ti x H
-
-        Returns:
-            output: N x To x H
-            attention_distribution: N x To x Ti
-        """
-        batch_size = queries.size(0)
-        hidden_size = queries.size(2)
-        input_lengths = values.size(1)
-        # (N, To, H) * (N, H, Ti) -> (N, To, Ti)
-        attention_scores = torch.bmm(queries, values.transpose(1, 2))
-        attention_distribution = F.softmax(
-            attention_scores.view(-1, input_lengths), dim=1).view(batch_size, -1, input_lengths)
-        # (N, To, Ti) * (N, Ti, H) -> (N, To, H)
-        attention_output = torch.bmm(attention_distribution, values)
-        # # concat -> (N, To, 2*H)
-        # concated = torch.cat((attention_output, queries), dim=2)
-        # # TODO: Move this out of this class?
-        # # output -> (N, To, H)
-        # output = torch.tanh(self.linear_out(
-        #     concated.view(-1, 2*hidden_size))).view(batch_size, -1, hidden_size)
-
-        return attention_output, attention_distribution
-    
+ 
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model: int) -> None:
         super().__init__()
         self.d_model = d_model
-        self.linear = nn.Linear(2 * d_model, d_model)
     def get_pe(self, seq_len: int) -> torch.Tensor:
         pe = torch.zeros(seq_len, self.d_model)
         
@@ -90,8 +48,7 @@ class PositionalEncoding(nn.Module):
         pe = self.get_pe(seq_len).to(x.device)
         pe = pe.expand_as(x)
 
-        x = torch.cat([x, pe], dim= 2)
-        x = self.linear(x)
+        x = x + pe
 
         return x
     
@@ -116,88 +73,6 @@ class PositionwiseFeedForward(nn.Module):
         x = self.layer_norm(x)
 
         return x
-
-class BaseAttention(nn.Module):
-    ''' Base module for attentions '''
-
-    def __init__(self, temperature, num_head):
-        super().__init__()
-        self.temperature = temperature
-        self.num_head = num_head
-        self.softmax = nn.Softmax(dim=-1)
-        self.reset_mem()
-
-    def reset_mem(self):
-        # Reset mask
-        self.mask = None
-        self.k_len = None
-
-    def set_mem(self, prev_att):
-        pass
-
-    def compute_mask(self, k, k_len):
-        # Make the mask for padded states
-        self.k_len = k_len
-        bs, ts, _ = k.shape
-        self.mask = np.zeros((bs, self.num_head, ts))
-        for idx, sl in enumerate(k_len):
-            self.mask[idx, :, sl:] = 1  # ToDo: more elegant way?
-        self.mask = torch.from_numpy(self.mask).to(
-            k_len.device, dtype=torch.bool).view(-1, ts)  # BNxT
-
-    def _attend(self, energy, value):
-        attn = energy / self.temperature
-        attn = attn.masked_fill(self.mask, -np.inf)
-        attn = self.softmax(attn)  # BNxT
-        output = torch.bmm(attn.unsqueeze(1), value).squeeze(
-            1)  # BNxT x BNxTxD-> BNxD
-        return output, attn
-
-class LocationAwareAttention(BaseAttention):
-    ''' Location-Awared Attention '''
-
-    def __init__(self, kernel_size, kernel_num, dim, num_head, temperature):
-        super().__init__(temperature, num_head)
-        self.prev_att = None
-        self.loc_conv = nn.Conv1d(
-            num_head, kernel_num, kernel_size=2*kernel_size+1, padding=kernel_size, bias=False)
-        self.loc_proj = nn.Linear(kernel_num, dim, bias=False)
-        self.gen_energy = nn.Linear(dim, 1)
-        self.dim = dim
-
-    def reset_mem(self):
-        super().reset_mem()
-        self.prev_att = None
-
-    def set_mem(self, prev_att):
-        self.prev_att = prev_att
-
-    def forward(self, q, k, v):
-        bs_nh, ts, _ = k.shape
-        bs = bs_nh//self.num_head
-
-        # Uniformly init prev_att
-        if self.prev_att is None:
-            self.prev_att = torch.zeros((bs, self.num_head, ts)).to(k.device)
-            for idx, sl in enumerate(self.k_len):
-                self.prev_att[idx, :, :sl] = 1.0/sl
-
-        # Calculate location context
-        loc_context = torch.tanh(self.loc_proj(self.loc_conv(
-            self.prev_att).transpose(1, 2)))  # BxNxT->BxTxD
-        loc_context = loc_context.unsqueeze(1).repeat(
-            1, self.num_head, 1, 1).view(-1, ts, self.dim)   # BxNxTxD -> BNxTxD
-        q = q.unsqueeze(1)  # BNx1xD
-
-        # Compute energy and context
-        energy = self.gen_energy(torch.tanh(
-            k+q+loc_context)).squeeze(2)  # BNxTxD -> BNxT
-        output, attn = self._attend(energy, v)
-        attn = attn.view(bs, self.num_head, ts)  # BNxT -> BxNxT
-        self.prev_att = attn
-
-        return output, attn
-
 
 class LayerNormalization(nn.Module):
 
@@ -234,3 +109,23 @@ class ResidualConnectionBase(nn.Module):
 
     def forward(self, x, residual):
         return self.norm(x + self.dropout(residual))
+
+class DownsamplingLayer(nn.Module):
+    def __init__(self, downsample_factor: int):
+        super().__init__()
+        self.downsample_factor = downsample_factor
+
+    def forward(self, x):
+        """
+        Input shape: [batch, seq_len, d_model]
+        Output shape: [batch, seq_len/a, d_model*a]
+        """
+        batch_size, seq_len, d_model = x.size()
+                
+        # New sequence length after downsampling
+        new_seq_len = seq_len // self.downsample_factor
+        
+        # Reshape to combine consecutive timesteps
+        x = x.reshape(batch_size, new_seq_len, d_model * self.downsample_factor)
+        
+        return x

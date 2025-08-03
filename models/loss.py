@@ -51,7 +51,9 @@ class KLDivLoss(nn.Module):
         # exit()
 
         # Tính KL Divergence
-        loss = F.kl_div(logits, target_probs, reduction=self.reduction)
+        loss_kldiv = nn.KLDivLoss(reduction=self.reduction)
+
+        loss = loss_kldiv(logits, target_probs)
         
         return loss
 

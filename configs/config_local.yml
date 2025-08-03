@@ -40,7 +40,7 @@ training:
   vocab_path : "/home/anhkhoa/transformer_transducer_speeQ/data/vocab.json"
   cmvn_stats : "workspace/rna/conv-rnnt/data/cmvn_stats.pt"
   log_path: "/home/anhkhoa/Self-Attention-Acoustic/logs"
-  reload: True
+  reload: False
 
 # VLSP
 # training:

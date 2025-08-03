@@ -15,7 +15,7 @@ class AcousticModel(nn.Module):
         self.eos_id = config['eos_id']
 
     def forward(self, inputs, input_lengths, decoder_input, target_lengths, encoder_mask=None):
-        encoder_outputs, attn = self.encoder(inputs, encoder_mask)
+        encoder_outputs = self.encoder(inputs, encoder_mask)
         decoder_outputs = self.decoder(decoder_input, encoder_outputs, encoder_mask)  
         
         return decoder_outputs

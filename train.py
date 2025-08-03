@@ -52,12 +52,11 @@ def train_one_epoch(model, dataloader, optimizer, criterion, device, scheduler, 
         loss = criterion(output, target_text, fbank_len, text_len)
         loss.backward()
 
-        if ((id + 1) % accum_steps == 0) or ((id + 1) == len(dataloader)):
-            optimizer.step()
+        optimizer.step()
 
-            curr_lr, _ = scheduler(optimizer.optimizer)
+        curr_lr, _ = scheduler(optimizer.optimizer)
 
-            optimizer.zero_grad()  
+        optimizer.zero_grad() 
 
         total_loss += loss.item()
         progress_bar.set_postfix(batch_loss=loss.item())

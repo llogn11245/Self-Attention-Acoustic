@@ -9,8 +9,8 @@ model:
   enc: 
     n_head: 8           
     d_model: 80        
-    # d_k: 10             
-    # d_v: 10             
+    d_k: 10             
+    d_v: 10             
     d_hidden: 128       
     dropout: 0.2
   dec: 
@@ -40,7 +40,7 @@ training:
   vocab_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/vocab_w2i.json"
   cmvn_stats : "workspace/rna/conv-rnnt/data/cmvn_stats.pt"
   log_path: "C:/paper/self-acoustic/logs"
-  reload: True
+  reload: False
 
 # VLSP
 # training:
@@ -74,6 +74,11 @@ scheduler:
   lr_initial: 0.001
   n_warmup_steps: 1000
 
-rnnt_loss:
-  blank: 4
-  reduction: "mean" 
+loss:
+  # type: cross_entropy 
+  # blank: 4
+  # reduction: mean
+  # label_smoothingg: 0.1
+
+  type: kldiv 
+  reduction: batchmean

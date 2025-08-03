@@ -60,6 +60,13 @@ scheduler:
   lr_initial: 0.001
   n_warmup_steps: 15000
 
-rnnt_loss:
+loss:
+  type: cross_entropy 
   blank: 4
-  reduction: "mean" 
+  reduction: mean
+  label_smoothingg: 0.1
+
+  # type: kldiv 
+  # reduction: batchmean
+
+  

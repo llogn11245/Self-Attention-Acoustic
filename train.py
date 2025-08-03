@@ -2,7 +2,7 @@ import torch
 from utils.dataset import Speech2Text, speech_collate_fn
 from models.model import AcousticModel
 from tqdm import tqdm
-from models.loss import CrossEntropyLoss
+from models.loss import build_loss
 import argparse
 import yaml
 import os 
@@ -157,7 +157,7 @@ def main():
     model.to(device)
 
     # ==== Loss ====
-    criterion = CrossEntropyLoss(config["model"]["blank_id"])
+    criterion = build_loss(config["loss"])
 
     # ==== Optimizer ====
     optimizer = Optimizer(model.parameters(), config['optim'])

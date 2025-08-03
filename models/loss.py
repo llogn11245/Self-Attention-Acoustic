@@ -30,3 +30,37 @@ class CrossEntropyLoss(nn.Module):
         loss = loss_fn(logits, targets)
         
         return loss
+
+class KLDivLoss(nn.Module):
+    def __init__(self, reduction="batchmean"):
+        """
+        KL Divergence Loss cho bài toán sequence labeling
+        
+        Args:
+            reduction (str): 'mean', 'sum', 'batchmean', 'none' 
+        """
+        super(KLDivLoss, self).__init__()
+        self.reduction = reduction
+
+    def forward(self, logits, targets, input_lengths=None, target_lengths=None):
+        logits = F.log_softmax(logits, dim= 2)
+        target_probs = torch.zeros_like(logits).scatter_(2, targets.unsqueeze(2), 1.0)
+
+        # print(f"shape logits: {logits.shape}")
+        # print(f"shape targets: {target_probs.shape}")
+        # exit()
+
+        # Tính KL Divergence
+        loss = F.kl_div(logits, target_probs, reduction=self.reduction)
+        
+        return loss
+
+def build_loss(config):
+    if config['type'] == 'cross_entropy':
+        return CrossEntropyLoss(
+            ignore_index= config['blank'],
+            reduction= config['reduction'],
+            label_smoothing= config['label_smoothing']
+        )
+    elif config['type'] == 'kldiv':
+        return KLDivLoss(reduction= config['reduction'])

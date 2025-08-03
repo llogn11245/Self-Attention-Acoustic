@@ -1,7 +1,7 @@
 import torch
 from utils.dataset import Speech2Text, speech_collate_fn
 from models.model import AcousticModel
-from models.loss import CrossEntropyLoss
+from models.loss import build_loss
 import argparse
 import yaml
 import os
@@ -99,7 +99,7 @@ def main():
     model.to(device)
 
     # ==== Loss ====
-    criterion = CrossEntropyLoss(config["rnnt_loss"]["blank"])
+    criterion = build_loss(config["loss"])
 
     # ==== Get one batch ====
     # Get a batch from the training set to debug

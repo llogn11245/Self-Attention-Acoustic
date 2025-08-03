@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .modules import ScaledDotProductAttention, DotProductAttention, ResidualConnectionBase
+from .modules import ScaledDotProductAttention
 
 class AcousticDecoder(nn.Module):
     def __init__(self, vocab_size, embedding_dim, hidden_size, num_layers, embed_dropout=0.1, var_dropout=0.2, sos_id=1, eos_id=2, pad_id=0):
@@ -23,12 +23,8 @@ class AcousticDecoder(nn.Module):
         ])
         
         self.attention = ScaledDotProductAttention(temperature=hidden_size**0.5)
-        # self.attention = DotProductAttention()
-
-        self.residual_atten = ResidualConnectionBase(hidden_size, dropout=var_dropout)
-
         self.mlp = nn.Sequential(
-            nn.Linear(hidden_size, hidden_size),
+            nn.Linear(2 * hidden_size, hidden_size),
             nn.Tanh(),
             nn.Linear(hidden_size, vocab_size)
         )
@@ -71,11 +67,8 @@ class AcousticDecoder(nn.Module):
             context, attn = self.attention(query, key, value, mask=attn_mask)
             context = context.squeeze(1)  # [B, 1, hidden]
             context = context.squeeze(1)  # [B, hidden]
-
-            residual_output = self.residual_atten(h[-1], context)
-
-            # char_input = torch.cat([h[-1], context], dim=1)
-            output = self.mlp(residual_output)
+            char_input = torch.cat([h[-1], context], dim=1)
+            output = self.mlp(char_input)
             outputs.append(output)
 
         logits = torch.stack(outputs, dim=1)  # [batch, max_len, vocab_size]

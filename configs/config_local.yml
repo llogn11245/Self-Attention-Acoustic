@@ -75,10 +75,10 @@ scheduler:
   n_warmup_steps: 1000
 
 loss:
-  # type: cross_entropy 
-  # blank: 4
-  # reduction: mean
-  # label_smoothingg: 0.1
+  type: cross_entropy 
+  blank: 4
+  reduction: mean
+  label_smoothing: 0.1
 
-  type: kldiv 
-  reduction: batchmean
+  # type: kldiv 
+  # reduction: batchmean

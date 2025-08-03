@@ -64,7 +64,7 @@ loss:
   type: cross_entropy 
   blank: 4
   reduction: mean
-  label_smoothingg: 0.1
+  label_smoothing: 0.1
 
   # type: kldiv 
   # reduction: batchmean

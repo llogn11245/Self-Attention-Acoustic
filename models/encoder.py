@@ -1,5 +1,5 @@
 from .atten import MultiHeadAttention, MultiHeadAttentionBlock
-from .modules import PositionalEncoding, PositionwiseFeedForward, ResidualConnection, ResidualConnectionBase, DownsamplingLayer
+from .modules import PositionalEncoding, PositionwiseFeedForward, ResidualConnectionBase
 import torch
 import torch.nn as nn
 
@@ -30,7 +30,7 @@ class InterleaveHybridAcousticEncoder(nn.Module):
         super(InterleaveHybridAcousticEncoder, self).__init__()
         self.mha = MultiHeadAttention(n_head, d_model, dropout)
         self.midlayer = ResidualConnectionBase(d_model, dropout)
-
+        self.resi = ResidualConnectionBase(d_hidden, dropout)
         self.lstm = nn.LSTM(d_model, d_hidden, batch_first= True)
 
     def forward(self, x, mask= None): 
@@ -40,7 +40,7 @@ class InterleaveHybridAcousticEncoder(nn.Module):
 
         out, _ = self.lstm(midlayer)
 
-        out = self.midlayer(out, midlayer)
+        out = self.resi(out, midlayer)
         return out
 
 def build_encoder(config):

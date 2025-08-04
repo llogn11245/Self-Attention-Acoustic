@@ -40,9 +40,9 @@ class InterleaveHybridAcousticEncoder(nn.Module):
         midlayer = self.midlayer(atten_out, x)
 
         out, _ = self.lstm(midlayer)
-        out = self.linear(out)
+        # out = self.linear(out)
 
-        out = self.resi(out, midlayer)
+        # out = self.resi(out, midlayer)
         # out = self.linear2(out)
 
         return out

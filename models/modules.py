@@ -91,16 +91,6 @@ class LayerNormalization(nn.Module):
         # eps is to prevent dividing by zero or when std is very small
         return self.alpha * (x - mean) / (std + self.eps) + self.bias
 
-class ResidualConnection(nn.Module):
-    
-        def __init__(self, features: int, dropout: float) -> None:
-            super().__init__()
-            self.dropout = nn.Dropout(dropout)
-            self.norm = LayerNormalization(features)
-
-        def forward(self, x, sublayer):
-            return self.norm(x + self.dropout(sublayer(x)))
-
 class ResidualConnectionBase(nn.Module):
     def __init__(self, features: int, dropout: float) -> None:
         super().__init__()
@@ -109,23 +99,3 @@ class ResidualConnectionBase(nn.Module):
 
     def forward(self, x, residual):
         return self.norm(x + self.dropout(residual))
-
-class DownsamplingLayer(nn.Module):
-    def __init__(self, downsample_factor: int):
-        super().__init__()
-        self.downsample_factor = downsample_factor
-
-    def forward(self, x):
-        """
-        Input shape: [batch, seq_len, d_model]
-        Output shape: [batch, seq_len/a, d_model*a]
-        """
-        batch_size, seq_len, d_model = x.size()
-                
-        # New sequence length after downsampling
-        new_seq_len = seq_len // self.downsample_factor
-        
-        # Reshape to combine consecutive timesteps
-        x = x.reshape(batch_size, new_seq_len, d_model * self.downsample_factor)
-        
-        return x

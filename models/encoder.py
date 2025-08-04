@@ -39,6 +39,8 @@ class InterleaveHybridAcousticEncoder(nn.Module):
         midlayer = self.midlayer(atten_out, x)
 
         out, _ = self.lstm(midlayer)
+
+        out = self.midlayer(out, midlayer)
         return out
 
 def build_encoder(config):

@@ -30,17 +30,21 @@ class InterleaveHybridAcousticEncoder(nn.Module):
         super(InterleaveHybridAcousticEncoder, self).__init__()
         self.mha = MultiHeadAttention(n_head, d_model, dropout)
         self.midlayer = ResidualConnectionBase(d_model, dropout)
-        self.resi = ResidualConnectionBase(d_hidden, dropout)
+        self.resi = ResidualConnectionBase(d_model, dropout)
         self.lstm = nn.LSTM(d_model, d_hidden, batch_first= True)
-
+        self.linear = nn.Linear(d_hidden, d_model)
+        self.linear2 = nn.Linear(d_model, d_hidden)
     def forward(self, x, mask= None): 
         atten_out, _ = self.mha(x, x, x, mask)
 
         midlayer = self.midlayer(atten_out, x)
 
         out, _ = self.lstm(midlayer)
+        out = self.linear(out)
 
         out = self.resi(out, midlayer)
+        # out = self.linear2(out)
+
         return out
 
 def build_encoder(config):

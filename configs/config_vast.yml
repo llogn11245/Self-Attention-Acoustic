@@ -14,7 +14,7 @@ model:
     dropout: 0.2
   dec: 
     embed_dim: 64
-    d_hidden: 128
+    d_hidden: 80
     num_layers: 1
     embed_dropout: 0.1
     var_dropout: 0.2

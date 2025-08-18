@@ -4,6 +4,7 @@ from torch.utils.data import Dataset
 import torchaudio
 import torchaudio.transforms as T
 from tqdm import tqdm
+import json
 
 # [{idx : {encoded_text : Tensor, wav_path : text} }]
 
@@ -11,8 +12,6 @@ def load_json(path):
     """
     Load a json file and return the content as a dictionary.
     """
-    import json
-
     with open(path, "r", encoding='utf-8') as f:
         data = json.load(f)
     return data
@@ -76,7 +75,7 @@ class Speech2Text(Dataset):
             n_fft=512,
             win_length=int(0.032 * 16000),
             hop_length=int(0.010 * 16000),
-            n_mels=80,
+            n_mels=40,
             power=2.0
         )
 
@@ -88,15 +87,6 @@ class Speech2Text(Dataset):
         return len(self.data)
     
     def get_fbank(self, waveform, sample_rate=16000):
-        # mel_extractor = T.MelSpectrogram(
-        #     sample_rate=sample_rate,
-        #     n_fft=512,
-        #     win_length=int(0.032 * sample_rate),
-        #     hop_length=int(0.010 * sample_rate),
-        #     n_mels=40,
-        #     power=2.0
-        # )
-
         log_mel = self.mel_extractor(waveform.unsqueeze(0))
         log_mel = torchaudio.functional.amplitude_to_DB(log_mel, multiplier=10.0, amin=1e-10, db_multiplier=0)
         log_mel = log_mel.squeeze(0)
@@ -117,11 +107,11 @@ class Speech2Text(Dataset):
         wav_path = current_item["wav_path"]
         encoded_text = torch.tensor(current_item["encoded_text"] + [self.eos_token], dtype=torch.long)
         decoder_input = torch.tensor([self.sos_token] + current_item["encoded_text"], dtype=torch.long)
-        fbank = self.extract_from_path(wav_path).float()  # [T, 80]
+        fbank = self.extract_from_path(wav_path).float()  # [T, 40]
         
         return {
             "text": encoded_text,        # [T_text]
-            "fbank": fbank,              # [T_audio, 80]
+            "fbank": fbank,              # [T_audio, 40]
             "text_len": len(encoded_text),
             "fbank_len": fbank.shape[0],
             "decoder_input": decoder_input,  # [T_text + 2] (bắt đầu bằng SOS, kết thúc bằng EOS)
@@ -144,7 +134,7 @@ def speech_collate_fn(batch):
 
     padded_decoder_inputs = pad_sequence(decoder_outputs, batch_first=True, padding_value=0)
     padded_texts = pad_sequence(texts, batch_first=True, padding_value=0)       # [B, T_text]
-    padded_fbanks = pad_sequence(fbanks, batch_first=True, padding_value=0.0)   # [B, T_audio, 80]
+    padded_fbanks = pad_sequence(fbanks, batch_first=True, padding_value=0.0)   # [B, T_audio, 40]
 
     speech_mask=calculate_mask(fbank_lens, padded_fbanks.size(1))      # [B, T]
     text_mask=calculate_mask(text_lens, padded_texts.size(1))

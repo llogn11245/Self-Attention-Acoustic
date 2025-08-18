@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from torch.utils.checkpoint import checkpoint
 from .decoder import build_decoder
 from .encoder import build_encoder
+from utils.dataset import SpecAugment
 
 class AcousticModel(nn.Module):
     def __init__(self, config):
@@ -14,7 +15,11 @@ class AcousticModel(nn.Module):
         self.sos_id = config['sos_id']
         self.eos_id = config['eos_id']
 
-    def forward(self, inputs, input_lengths, decoder_input, target_lengths, encoder_mask=None):
+    def forward(self, inputs, input_lengths, decoder_input, target_lengths, encoder_mask=None, train=True):
+        if train:
+            inputs = inputs.transpose(1, 2)  # (B, T, F) -> (B, F, T)
+            inputs = SpecAugment(inputs)
+            inputs = inputs.transpose(1, 2) # (B, F, T) -> (B, T, F)
         encoder_outputs = self.encoder(inputs, encoder_mask)
         decoder_outputs = self.decoder(decoder_input, encoder_outputs, encoder_mask)  
         

@@ -5,6 +5,7 @@ import torchaudio
 import torchaudio.transforms as T
 from tqdm import tqdm
 import json
+import librosa
 
 # [{idx : {encoded_text : Tensor, wav_path : text} }]
 
@@ -32,36 +33,8 @@ class Vocab:
     def __len__(self):
         return len(self.vocab)
 
-# def compute_cmvn(dataset, sample_rate=16000):
-#     mel_extractor = T.MelSpectrogram(
-#         sample_rate=sample_rate,
-#         n_fft=512,
-#         win_length=int(0.032 * sample_rate),
-#         hop_length=int(0.010 * sample_rate),
-#         n_mels=192,
-#         power=2.0
-#     )
-#     sum_feats = torch.zeros(192)
-#     sum_squares = torch.zeros(192)
-#     total_frames = 0
-
-#     for waveform in tqdm(dataset):  # dataset là list/tập của waveform tensors
-#         with torch.no_grad():
-#             mel = mel_extractor(waveform.unsqueeze(0))  # [1, 80, T]
-#             log_mel = torchaudio.functional.amplitude_to_DB(
-#                 mel, multiplier=10.0, amin=1e-10, db_multiplier=0
-#             ).squeeze(0)  # [80, T]
-
-#             total_frames += log_mel.shape[1]
-#             sum_feats += log_mel.sum(dim=1)
-#             sum_squares += (log_mel ** 2).sum(dim=1)
-
-#     mean = sum_feats / total_frames
-#     std = (sum_squares / total_frames - mean**2).sqrt()
-#     return mean, std
-
 class Speech2Text(Dataset):
-    def __init__(self, json_path, vocab_path, cmvn_stats= None):
+    def __init__(self, json_path, vocab_path):
         super().__init__()
         self.data = load_json(json_path)
         self.vocab = Vocab(vocab_path)
@@ -78,10 +51,6 @@ class Speech2Text(Dataset):
             n_mels=40,
             power=2.0
         )
-
-        # stats = torch.load(cmvn_stats) 
-        # self.cmvn_mean = stats['mean']
-        # self.cmvn_std = stats['std']
             
     def __len__(self):
         return len(self.data)
@@ -148,3 +117,48 @@ def speech_collate_fn(batch):
         "fbank": padded_fbanks,
         "fbank_mask": speech_mask
     }
+
+class SpecAugment(nn.Module):
+
+    """Spectrogram Augmentation
+
+    Args:
+        spec_augment: whether to apply spec augment
+        mF: number of frequency masks
+        F: maximum frequency mask size
+        mT: number of time masks
+        pS: adaptive maximum time mask size in %
+
+    References:
+        SpecAugment: A Simple Data Augmentation Method for Automatic Speech Recognition, Park et al.
+        https://arxiv.org/abs/1904.08779
+
+        SpecAugment on Large Scale Datasets, Park et al.
+        https://arxiv.org/abs/1912.05533
+
+    """
+
+    def __init__(self, spec_augment, mF, F, mT, pS):
+        super(SpecAugment, self).__init__()
+        self.spec_augment = spec_augment
+        self.mF = mF
+        self.F = F
+        self.mT = mT
+        self.pS = pS
+
+    def forward(self, x, x_len):
+
+        # Spec Augment
+        if self.spec_augment:
+        
+            # Frequency Masking
+            for _ in range(self.mF):
+                x = torchaudio.transforms.FrequencyMasking(freq_mask_param=self.F, iid_masks=False).forward(x)
+
+            # Time Masking
+            for b in range(x.size(0)):
+                T = int(self.pS * x_len[b])
+                for _ in range(self.mT):
+                    x[b:b+1, :, :x_len[b]] = torchaudio.transforms.TimeMasking(time_mask_param=T).forward(x[b:b+1, :, :x_len[b]])
+
+        return x

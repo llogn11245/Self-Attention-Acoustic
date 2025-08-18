@@ -47,7 +47,7 @@ def train_one_epoch(model, dataloader, optimizer, criterion, device, scheduler, 
         target_text = batch["text"].to(device)
         decoder_input = batch["decoder_input"].to(device)
 
-        output = model(speech, fbank_len.long(), decoder_input, text_len.long(), speech_mask)
+        output = model(speech, fbank_len.long(), decoder_input, text_len.long(), speech_mask, train=True)
 
         loss = criterion(output, target_text, fbank_len, text_len)
         loss.backward()
@@ -83,7 +83,7 @@ def evaluate(model, dataloader, criterion, device):
             text_len = batch["text_len"].to(device)
             decoder_input = batch["decoder_input"].to(device)
 
-            output = model(speech, fbank_len.long(), decoder_input, text_len.long(), speech_mask)
+            output = model(speech, fbank_len.long(), decoder_input, text_len.long(), speech_mask, train=False)
             loss = criterion(output, target_text, fbank_len, text_len)
 
             total_loss += loss.item()
@@ -124,7 +124,6 @@ def main():
     train_dataset = Speech2Text(
         json_path=training_cfg['train_path'],
         vocab_path=training_cfg['vocab_path'],
-        cmvn_stats=training_cfg['cmvn_stats'],
     )
 
     train_loader = torch.utils.data.DataLoader(
@@ -139,7 +138,6 @@ def main():
     dev_dataset = Speech2Text(
         json_path=training_cfg['dev_path'],
         vocab_path=training_cfg['vocab_path'],
-        cmvn_stats=training_cfg['cmvn_stats'],
     )
 
     dev_loader = torch.utils.data.DataLoader(

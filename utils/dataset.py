@@ -55,7 +55,7 @@ class Speech2Text(Dataset):
             n_fft=512,
             win_length=int(0.032 * 16000),
             hop_length=int(0.010 * 16000),
-            n_mels=40,
+            n_mels=80,
             power=2.0
         )
 
@@ -72,7 +72,7 @@ class Speech2Text(Dataset):
     def _load_waveform_with_speed(self, path):
         wav, sr = torchaudio.load(path)  # wav: [channels, samples]
         speed_perturb = T.SpeedPerturbation(orig_freq=sr, factors=[0.9, 1.1, 1.0, 1.0, 1.0, 1.0])
-        wav, sr = speed_perturb(wav)
+        wav = speed_perturb(wav)[0]
 
         return wav.squeeze(0), sr
     

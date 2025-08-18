@@ -6,6 +6,7 @@ import torchaudio.transforms as T
 from tqdm import tqdm
 import json
 import librosa
+import random
 
 # [{idx : {encoded_text : Tensor, wav_path : text} }]
 
@@ -34,7 +35,7 @@ class Vocab:
         return len(self.vocab)
 
 class Speech2Text(Dataset):
-    def __init__(self, json_path, vocab_path):
+    def __init__(self, json_path, vocab_path, train = True):
         super().__init__()
         self.data = load_json(json_path)
         self.vocab = Vocab(vocab_path)
@@ -42,21 +43,23 @@ class Speech2Text(Dataset):
         self.eos_token = self.vocab.get_eos_token()
         self.pad_token = self.vocab.get_pad_token()
         self.unk_token = self.vocab.get_unk_token()
-        
-        self.mel_extractor = T.MelSpectrogram(
-            sample_rate=16000,
+
+        self.train = train    
+
+    def __len__(self):
+        return len(self.data)
+    
+    def _extract_feature(self, waveform, sample_rate=16000):
+        mel_extractor = T.MelSpectrogram(
+            sample_rate=sample_rate,
             n_fft=512,
             win_length=int(0.032 * 16000),
             hop_length=int(0.010 * 16000),
             n_mels=40,
             power=2.0
         )
-            
-    def __len__(self):
-        return len(self.data)
-    
-    def get_fbank(self, waveform, sample_rate=16000):
-        log_mel = self.mel_extractor(waveform.unsqueeze(0))
+
+        log_mel = mel_extractor(waveform.unsqueeze(0))
         log_mel = torchaudio.functional.amplitude_to_DB(log_mel, multiplier=10.0, amin=1e-10, db_multiplier=0)
         log_mel = log_mel.squeeze(0)
     
@@ -66,10 +69,21 @@ class Speech2Text(Dataset):
 
         return normalized_log_mel_spec.transpose(0, 1)  # [T, 80]
     
+    def _load_waveform_with_speed(self, path):
+        wav, sr = torchaudio.load(path)  # wav: [channels, samples]
+        speed_perturb = T.SpeedPerturbation(orig_freq=sr, factors=[0.9, 1.1, 1.0, 1.0, 1.0, 1.0])
+        wav, sr = speed_perturb(wav)
+
+        return wav.squeeze(0), sr
+    
     def extract_from_path(self, wave_path):
-        waveform, sr = torchaudio.load(wave_path)
-        waveform = waveform.squeeze(0)  # (channel,) -> (samples,)
-        return self.get_fbank(waveform, sample_rate=sr)
+        if self.train:
+            waveform, sr = self._load_waveform_with_speed(wave_path)
+        else:
+            waveform, sr = torchaudio.load(wave_path) 
+            waveform = waveform.squeeze(0)  
+
+        return self._extract_feature(waveform, sample_rate=sr)
 
     def __getitem__(self, idx):
         current_item = self.data[idx]

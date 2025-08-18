@@ -1,15 +1,9 @@
-audio_data:
-  type: "log"
-  sampling_rate: 16000
-  window_size: 0.02
-  window_stride: 0.01
-  window: 'hamming'
 
 model:
   enc: 
     type: interleave_hybrid   # basic, interleave_hybrid
     n_head: 8           
-    d_model: 40                
+    d_model: 80                
     d_hidden: 128       
     dropout: 0.2
     n_layer: 2
@@ -20,13 +14,18 @@ model:
     embed_dropout: 0.1
     var_dropout: 0.2
   vocab_size: 4866
-  feature_dim: 40   # sync with dataset.py
+  feature_dim: 80   # sync with dataset.py
   name : 'SAA'
   share_weight: False
   pad_id: 0
   sos_id: 1
   eos_id: 2
   blank_id: 4
+  spec_augment: True
+  mF: 2
+  F: 30
+  mT: 2
+  pS: 0.05
   
 
 training:

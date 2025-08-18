@@ -12,13 +12,21 @@ class AcousticModel(nn.Module):
         self.encoder = build_encoder(config)
         self.decoder = build_decoder(config)
 
+        self.spec_augment = SpecAugment(
+            spec_augment=config.get("spec_augment", True),
+            mF=config.get("mF", 2),
+            F=config.get("F", 30),
+            mT=config.get("mT", 2),
+            pS=config.get("pS", 0.05),
+        )
+
         self.sos_id = config['sos_id']
         self.eos_id = config['eos_id']
 
     def forward(self, inputs, input_lengths, decoder_input, target_lengths, encoder_mask=None, train=True):
         if train:
             inputs = inputs.transpose(1, 2)  # (B, T, F) -> (B, F, T)
-            inputs = SpecAugment(inputs)
+            inputs = self.spec_augment(inputs, input_lengths)  
             inputs = inputs.transpose(1, 2) # (B, F, T) -> (B, T, F)
         encoder_outputs = self.encoder(inputs, encoder_mask)
         decoder_outputs = self.decoder(decoder_input, encoder_outputs, encoder_mask)  

@@ -5,6 +5,8 @@ import torchaudio
 import torchaudio.transforms as T
 from tqdm import tqdm
 import json
+from speechbrain.lobes.features import Fbank
+import speechbrain as sb
 
 # [{idx : {encoded_text : Tensor, wav_path : text} }]
 
@@ -44,48 +46,58 @@ class Speech2Text(Dataset):
 
         self.train = train    
 
+        self.fbank = Fbank(
+            sample_rate=16000,
+            n_mels=80,
+            n_fft=512,
+            win_length=25,
+        )
+
     def __len__(self):
         return len(self.data)
     
     def _extract_feature(self, waveform, sample_rate=16000):
-        mel_extractor = T.MelSpectrogram(
-            sample_rate=sample_rate,
-            n_fft=512,
-            win_length=int(0.032 * 16000),
-            hop_length=int(0.010 * 16000),
-            n_mels=80,
-            power=2.0
-        )
+        # mel_extractor = T.MelSpectrogram(
+        #     sample_rate=sample_rate,
+        #     n_fft=512,
+        #     win_length=int(0.032 * 16000),
+        #     hop_length=int(0.010 * 16000),
+        #     n_mels=80,
+        #     power=2.0
+        # )
 
-        log_mel = mel_extractor(waveform.unsqueeze(0))
-        log_mel = torchaudio.functional.amplitude_to_DB(log_mel, multiplier=10.0, amin=1e-10, db_multiplier=0)
-        log_mel = log_mel.squeeze(0)
+        # log_mel = mel_extractor(waveform.unsqueeze(0))
+        # log_mel = torchaudio.functional.amplitude_to_DB(log_mel, multiplier=10.0, amin=1e-10, db_multiplier=0)
+        # log_mel = log_mel.squeeze(0)
     
-        mean = log_mel.mean(dim=1, keepdim=True)
-        std = log_mel.std(dim=1, keepdim=True)
-        normalized_log_mel_spec = (log_mel - mean) / (std + 1e-5)
+        # mean = log_mel.mean(dim=1, keepdim=True)
+        # std = log_mel.std(dim=1, keepdim=True)
+        # normalized_log_mel_spec = (log_mel - mean) / (std + 1e-5)
 
-        return normalized_log_mel_spec.transpose(0, 1)  # [T, 80]
+        fbank = self.fbank(waveform).squeeze(0)  # [T, 80]
+
+        return fbank
        
     def extract_from_path(self, wave_path):
-        waveform, sr = torchaudio.load(wave_path) 
-        waveform = waveform.squeeze(0)  
+        sig  = sb.dataio.dataio.read_audio(wave_path)
 
-        return self._extract_feature(waveform, sample_rate=sr)
+        return self.get_fbank(sig.unsqueeze(0))
 
     def __getitem__(self, idx):
         current_item = self.data[idx]
         wav_path = current_item["wav_path"]
         encoded_text = torch.tensor(current_item["encoded_text"] + [self.eos_token], dtype=torch.long)
         decoder_input = torch.tensor([self.sos_token] + current_item["encoded_text"], dtype=torch.long)
+        tokens = torch.tensor(current_item["encoded_text"], dtype=torch.long)
         fbank = self.extract_from_path(wav_path).float()  # [T, 40]
         
         return {
-            "text": encoded_text,        # [T_text]
-            "fbank": fbank,              # [T_audio, 40]
+            "text": encoded_text,
+            "fbank": fbank,
             "text_len": len(encoded_text),
             "fbank_len": fbank.shape[0],
-            "decoder_input": decoder_input,  # [T_text + 2] (bắt đầu bằng SOS, kết thúc bằng EOS)
+            "decoder_input": decoder_input,
+            "tokens": tokens,
         }
     
 from torch.nn.utils.rnn import pad_sequence

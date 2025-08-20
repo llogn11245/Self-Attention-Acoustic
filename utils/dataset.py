@@ -5,8 +5,6 @@ import torchaudio
 import torchaudio.transforms as T
 from tqdm import tqdm
 import json
-import librosa
-import random
 
 # [{idx : {encoded_text : Tensor, wav_path : text} }]
 
@@ -68,20 +66,10 @@ class Speech2Text(Dataset):
         normalized_log_mel_spec = (log_mel - mean) / (std + 1e-5)
 
         return normalized_log_mel_spec.transpose(0, 1)  # [T, 80]
-    
-    def _load_waveform_with_speed(self, path):
-        wav, sr = torchaudio.load(path)  # wav: [channels, samples]
-        speed_perturb = T.SpeedPerturbation(orig_freq=sr, factors=[0.9, 1.1, 1.0, 1.0, 1.0, 1.0])
-        wav = speed_perturb(wav)[0]
-
-        return wav.squeeze(0), sr
-    
+       
     def extract_from_path(self, wave_path):
-        if self.train:
-            waveform, sr = self._load_waveform_with_speed(wave_path)
-        else:
-            waveform, sr = torchaudio.load(wave_path) 
-            waveform = waveform.squeeze(0)  
+        waveform, sr = torchaudio.load(wave_path) 
+        waveform = waveform.squeeze(0)  
 
         return self._extract_feature(waveform, sample_rate=sr)
 

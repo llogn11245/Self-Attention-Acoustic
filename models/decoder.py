@@ -54,9 +54,9 @@ class AcousticDecoder(nn.Module):
             rnn_input = torch.cat([embedded[:, t, :], context], dim=1)
             h[0], c[0] = self.rnn[0](rnn_input, (h[0], c[0]))
             for i in range(1, self.num_layers):
-                h[i], c[i] = self.rnn[i](h[i-1], (h[i], c[i]))
-                h[i] = self.var_dropout(h[i])  # variational recurrent dropout
-            
+                new_h, new_c = self.rnn[i](h[i-1], (h[i], c[i]))
+                h[i] = self.var_dropout(new_h) + h[i-1]
+                c[i] = new_c
             query = h[-1].unsqueeze(1).unsqueeze(1)  # [B, 1, 1, hidden]
             key = value = encoder_outputs.unsqueeze(1)  # [batch, 1, time, hidden]
             if encoder_mask is not None:

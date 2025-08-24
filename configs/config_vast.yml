@@ -1,29 +1,28 @@
-
 model:
   enc: 
     type: interleave_hybrid   # basic, interleave_hybrid
-    n_head: 8           
-    d_model: 80                
-    d_hidden: 128       
+    n_head: 16
+    d_model: 160                
+    d_hidden: 256       
     dropout: 0.2
-    n_layer: 2
+    n_layer: 3
   dec: 
     embed_dim: 64
-    d_hidden: 128
-    num_layers: 1
+    d_hidden: 256
+    num_layers: 2
     embed_dropout: 0.1
     var_dropout: 0.2
   vocab_size: 4866
-  feature_dim: 80   # sync with dataset.py
+  feature_dim: 160   # sync with dataset.py
   name : 'SAA'
   share_weight: False
   pad_id: 0
   sos_id: 1
   eos_id: 2
   blank_id: 4
-  spec_augment: True
+  spec_augment: False
   mF: 2
-  F: 30
+  F: 15
   mT: 2
   pS: 0.05
   

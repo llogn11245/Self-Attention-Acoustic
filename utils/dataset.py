@@ -48,7 +48,7 @@ class Speech2Text(Dataset):
 
         self.fbank = Fbank(
             sample_rate=16000,
-            n_mels=80,
+            n_mels=160,
             n_fft=512,
             win_length=25,
         )
@@ -81,7 +81,7 @@ class Speech2Text(Dataset):
     def extract_from_path(self, wave_path):
         sig  = sb.dataio.dataio.read_audio(wave_path)
 
-        return self.get_fbank(sig.unsqueeze(0))
+        return self._extract_feature(sig.unsqueeze(0))
 
     def __getitem__(self, idx):
         current_item = self.data[idx]

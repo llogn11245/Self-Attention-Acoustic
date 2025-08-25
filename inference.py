@@ -55,7 +55,7 @@ def main():
     model.eval()
 
     #===Load Data===
-    dataset = Speech2Text(full_cfg['training']['train_path'], 
+    dataset = Speech2Text(full_cfg['training']['test_path'], 
                           full_cfg['training']['vocab_path'], 
                           full_cfg['training']['cmvn_stats'])
     itos    = dataset.vocab.itos

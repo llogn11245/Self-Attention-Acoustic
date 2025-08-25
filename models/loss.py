@@ -46,18 +46,33 @@ class KLDivLoss(nn.Module):
         logits = F.log_softmax(logits, dim= 2)
         target_probs = torch.zeros_like(logits).scatter_(2, targets.unsqueeze(2), 1.0)
 
-        # print(f"shape logits: {logits.shape}")
-        # print(f"shape targets: {target_probs.shape}")
-        # print(f"target_probs: {target_probs[0,:,:]}")
-        # exit()
-
         # Tính KL Divergence
         loss_kldiv = nn.KLDivLoss(reduction=self.reduction)
 
         loss = loss_kldiv(logits, target_probs)
         
         return loss
+    
+class CTCLoss(nn.Module):
+    def __init__(self, blank=0, reduction="mean"):
+        super(CTCLoss, self).__init__()
+        self.blank = blank
+        self.reduction = reduction
+        self.ctc_loss_fn = nn.CTCLoss(
+            blank=self.blank,
+            reduction=self.reduction,
+        )
 
+    def forward(self, logits, targets, input_lengths, target_lengths):
+        log_probs = F.log_softmax(logits, dim=-1)
+
+        # [B, T, C] -> [T, B, C] 
+        log_probs = log_probs.transpose(0, 1)  # [sequence_length, batch_size, vocab_size]
+        
+        loss = self.ctc_loss_fn(log_probs, targets, input_lengths, target_lengths)
+        
+        return loss
+    
 def build_loss(config):
     if config['type'] == 'cross_entropy':
         return CrossEntropyLoss(

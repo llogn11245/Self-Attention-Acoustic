@@ -112,12 +112,15 @@ def speech_collate_fn(batch):
     decoder_outputs = [torch.tensor(item["decoder_input"]) for item in batch]
     texts = [item["text"] for item in batch]
     fbanks = [item["fbank"] for item in batch]
+    tokens = [item["tokens"] for item in batch]
     text_lens = torch.tensor([item["text_len"] for item in batch], dtype=torch.long)
     fbank_lens = torch.tensor([item["fbank_len"] for item in batch], dtype=torch.long)
+    tokens_lens = torch.tensor([len(item["tokens"]) for item in batch], dtype=torch.long)
 
     padded_decoder_inputs = pad_sequence(decoder_outputs, batch_first=True, padding_value=0)
     padded_texts = pad_sequence(texts, batch_first=True, padding_value=0)       # [B, T_text]
     padded_fbanks = pad_sequence(fbanks, batch_first=True, padding_value=0.0)   # [B, T_audio, 40]
+    padded_tokens = pad_sequence(tokens, batch_first=True, padding_value=0)      # [B, T_text]
 
     speech_mask=calculate_mask(fbank_lens, padded_fbanks.size(1))      # [B, T]
     text_mask=calculate_mask(text_lens, padded_texts.size(1))
@@ -129,7 +132,9 @@ def speech_collate_fn(batch):
         "text_len" : text_lens,
         "fbank_len" : fbank_lens,
         "fbank": padded_fbanks,
-        "fbank_mask": speech_mask
+        "fbank_mask": speech_mask,
+        "tokens" : padded_tokens,
+        "tokens_lens": tokens_lens
     }
 
 class SpecAugment(nn.Module):

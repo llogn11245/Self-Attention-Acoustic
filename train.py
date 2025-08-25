@@ -2,7 +2,7 @@ import torch
 from utils.dataset import Speech2Text, speech_collate_fn
 from models.model import AcousticModel
 from tqdm import tqdm
-from models.loss import build_loss
+from models.loss import build_loss, CTCLoss
 import argparse
 import yaml
 import os 
@@ -32,7 +32,7 @@ def reload_model(model, optimizer, checkpoint_path, model_name):
     return past_epoch + 1, model, optimizer
 
 
-def train_one_epoch(model, dataloader, optimizer, criterion, device, scheduler, accum_steps=1):
+def train_one_epoch(model, dataloader, optimizer, criterion, criterion2, ctc_weight, device, scheduler, accum_steps=1):
     model.train()
     total_loss = 0.0
 
@@ -46,10 +46,14 @@ def train_one_epoch(model, dataloader, optimizer, criterion, device, scheduler, 
         text_len = batch["text_len"].to(device)
         target_text = batch["text"].to(device)
         decoder_input = batch["decoder_input"].to(device)
+        tokens = batch["tokens"].to(device)
+        tokens_lens = batch["tokens_lens"].to(device)
 
-        output = model(speech, fbank_len.long(), decoder_input, text_len.long(), speech_mask, train=True)
+        enc_out, ctc_out, dec_out = model(speech, fbank_len.long(), decoder_input, text_len.long(), speech_mask, train=True)
 
-        loss = criterion(output, target_text, fbank_len, text_len)
+        loss_kldiv = criterion(dec_out, target_text, fbank_len, text_len)
+        loss_ctc = criterion2(ctc_out, tokens, fbank_len, tokens_lens)
+        loss = loss_ctc * ctc_weight + loss_kldiv * (1- ctc_weight)
         loss.backward()
 
         if ((id + 1) % accum_steps == 0) or ((id + 1) == len(dataloader)):
@@ -67,7 +71,7 @@ def train_one_epoch(model, dataloader, optimizer, criterion, device, scheduler, 
     return avg_loss, curr_lr
 
 
-def evaluate(model, dataloader, criterion, device):
+def evaluate(model, dataloader, criterion, criterion2, ctc_weight, device):
     model.eval()
     total_loss = 0.0
 
@@ -76,15 +80,20 @@ def evaluate(model, dataloader, criterion, device):
     with torch.no_grad():
         for batch in progress_bar:
             speech = batch["fbank"].to(device)
-            target_text = batch["text"].to(device)
             speech_mask = batch["fbank_mask"].to(device)
             text_mask = batch["text_mask"].to(device)
             fbank_len = batch["fbank_len"].to(device)
             text_len = batch["text_len"].to(device)
+            target_text = batch["text"].to(device)
             decoder_input = batch["decoder_input"].to(device)
+            tokens = batch["tokens"].to(device)
+            tokens_lens = batch["tokens_lens"].to(device)
 
-            output = model(speech, fbank_len.long(), decoder_input, text_len.long(), speech_mask, train=False)
-            loss = criterion(output, target_text, fbank_len, text_len)
+            enc_out, ctc_out, dec_out = model(speech, fbank_len.long(), decoder_input, text_len.long(), speech_mask, train=True)
+            
+            loss_kldiv = criterion(dec_out, target_text, fbank_len, text_len)
+            loss_ctc = criterion2(ctc_out, tokens, fbank_len, tokens_lens)
+            loss = loss_ctc * ctc_weight + loss_kldiv * (1- ctc_weight)
 
             total_loss += loss.item()
             progress_bar.set_postfix(batch_loss=loss.item())
@@ -155,18 +164,14 @@ def main():
     model.to(device)
 
     # ==== Loss ====
-    criterion = build_loss(config["loss"])
+    kldiv_loss = build_loss(config["loss"])
+    ctc_loss = CTCLoss(blank=config["model"]["blank_id"], reduction=config["loss"]["ctc_reduction"])
+    ctc_weight = config["loss"]["ctc_weight"]
 
     # ==== Optimizer ====
     optimizer = Optimizer(model.parameters(), config['optim'])
 
     # ==== Scheduler ====
-    # scheduler = ReduceLROnPlateau(
-    #     optimizer.optimizer,  # because you're using a wrapper class
-    #     mode='min',
-    #     factor=0.5,
-    #     patience=2,
-    # )
     if not config['training']['reload']:
         scheduler = NoamScheduler(
             n_warmup_steps=config['scheduler']['n_warmup_steps'],
@@ -190,8 +195,8 @@ def main():
     accumulation_steps = training_cfg["accumulation_steps"]
 
     for epoch in range(start_epoch, num_epochs + 1):
-        train_loss, lr = train_one_epoch(model, train_loader, optimizer, criterion, device, scheduler, accumulation_steps)
-        val_loss = evaluate(model, dev_loader, criterion, device)
+        train_loss, lr = train_one_epoch(model, train_loader, optimizer, kldiv_loss, ctc_loss, ctc_weight, device, scheduler, accumulation_steps)
+        val_loss = evaluate(model, dev_loader, kldiv_loss, ctc_loss, ctc_weight, device)
 
         logging.info(f"Epoch {epoch}: Train Loss = {train_loss:.4f}, Val Loss = {val_loss:.4f}, LR = {lr:6f}")
 

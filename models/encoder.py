@@ -43,7 +43,7 @@ class HybridEncoderLayer(nn.Module):
         self.linear = nn.Linear(d_hidden, d_model)
         
     def forward(self, x, mask=None):
-        atten_out, _ = self.mha(x, x, x, mask)
+        atten_out, mask = self.mha(x, x, x, mask)
         midlayer = self.midlayer(atten_out, x)
         out, _ = self.lstm(midlayer)
         out = self.linear(out)
@@ -51,18 +51,21 @@ class HybridEncoderLayer(nn.Module):
         return out
     
 class InterleaveHybridAcousticEncoder(nn.Module):
-    def __init__(self, n_head, d_model, d_hidden, dropout=0.1, n_layer=1):
+    def __init__(self, n_head, d_model, d_hidden, vocab_size, dropout=0.1, n_layer=1):
         super(InterleaveHybridAcousticEncoder, self).__init__()
         self.layers = nn.ModuleList([
             HybridEncoderLayer(n_head, d_model, d_hidden, dropout) for _ in range(n_layer)
         ])
         self.linear2 = nn.Linear(d_model, d_hidden)
-        
+        self.ctc_proj = nn.Linear(d_hidden, vocab_size)
+
     def forward(self, x, mask=None): 
         for layer in self.layers:
             x = layer(x, mask)
         out = self.linear2(x)
-        return out
+        ctc_out = self.ctc_proj(out)  # [B, T, vocab_size]
+
+        return out, ctc_out      # [B, T, d_hidden] & [B, T, vocab_size]
 
 def build_encoder(config):
     try: 
@@ -72,10 +75,11 @@ def build_encoder(config):
         dropout = config['enc']['dropout']
         type = config['enc']['type']
         n_layer = config['enc']['n_layer']
+        vocab_size = config['vocab_size']
         
         if type == 'basic':
             return AcousticEncoder(n_head, d_model, d_hidden, dropout, n_layer)
         elif type == 'interleave_hybrid': 
-            return InterleaveHybridAcousticEncoder(n_head, d_model, d_hidden, dropout, n_layer)
+            return InterleaveHybridAcousticEncoder(n_head, d_model, d_hidden, vocab_size, dropout, n_layer)
     except KeyError as e:
         raise ValueError(f"Missing configuration parameter: {e}")

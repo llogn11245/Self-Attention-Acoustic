@@ -28,10 +28,10 @@ class AcousticModel(nn.Module):
             inputs = inputs.transpose(1, 2)  # (B, T, F) -> (B, F, T)
             inputs = self.spec_augment(inputs, input_lengths)  
             inputs = inputs.transpose(1, 2) # (B, F, T) -> (B, T, F)
-        encoder_outputs = self.encoder(inputs, encoder_mask)
+        encoder_outputs, ctc_out = self.encoder(inputs, encoder_mask)
         decoder_outputs = self.decoder(decoder_input, encoder_outputs, encoder_mask)  
-        
-        return decoder_outputs
+
+        return encoder_outputs, ctc_out, decoder_outputs
     
     def recognize(self, enc_inputs, speech_length, target_length=100, enc_mask=None):
         """
@@ -44,7 +44,7 @@ class AcousticModel(nn.Module):
         Returns:
             list of lists: token IDs for each batch item
         """
-        encoder_outputs = self.encoder(enc_inputs, enc_mask)
+        encoder_outputs, _ = self.encoder(enc_inputs, enc_mask)
         batch_size = enc_inputs.size(0)
         device = enc_inputs.device
         sos_id = self.sos_id

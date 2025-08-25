@@ -19,7 +19,7 @@ model:
   pad_id: 0
   sos_id: 1
   eos_id: 2
-  blank_id: 4
+  blank_id: 0
   spec_augment: False
   mF: 2
   F: 15

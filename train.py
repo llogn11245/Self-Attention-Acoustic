@@ -49,11 +49,13 @@ def train_one_epoch(model, dataloader, optimizer, criterion, criterion2, ctc_wei
         tokens = batch["tokens"].to(device)
         tokens_lens = batch["tokens_lens"].to(device)
 
-        enc_out, ctc_out, dec_out = model(speech, fbank_len.long(), decoder_input, text_len.long(), speech_mask, train=True)
+        enc_out, ctc_out, dec_out = model(speech, fbank_len.long(), decoder_input, text_len.long(), speech_mask, train=True, tfr=0.5)
 
         loss_kldiv = criterion(dec_out, target_text, fbank_len, text_len)
         loss_ctc = criterion2(ctc_out, tokens, fbank_len, tokens_lens)
         loss = loss_ctc * ctc_weight + loss_kldiv * (1- ctc_weight)
+        print(loss)
+        exit()
         loss.backward()
 
         if ((id + 1) % accum_steps == 0) or ((id + 1) == len(dataloader)):
@@ -89,7 +91,7 @@ def evaluate(model, dataloader, criterion, criterion2, ctc_weight, device):
             tokens = batch["tokens"].to(device)
             tokens_lens = batch["tokens_lens"].to(device)
 
-            enc_out, ctc_out, dec_out = model(speech, fbank_len.long(), decoder_input, text_len.long(), speech_mask, train=True)
+            enc_out, ctc_out, dec_out = model(speech, fbank_len.long(), decoder_input, text_len.long(), speech_mask, train=True, tfr=1.0)
             
             loss_kldiv = criterion(dec_out, target_text, fbank_len, text_len)
             loss_ctc = criterion2(ctc_out, tokens, fbank_len, tokens_lens)

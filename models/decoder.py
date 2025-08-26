@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import random
 from .modules import ScaledDotProductAttention
 
 class AcousticDecoder(nn.Module):
@@ -31,12 +32,13 @@ class AcousticDecoder(nn.Module):
         self.embed_dropout = nn.Dropout(embed_dropout)
         self.var_dropout = nn.Dropout(var_dropout)
 
-    def forward(self, decoder_input, encoder_outputs, encoder_mask=None):
+    def forward(self, decoder_input, encoder_outputs, encoder_mask=None, tfr=1.0):
         """
         Args:
             decoder_input: [batch, max_len] (bắt đầu bằng SOS)
             encoder_outputs: [batch, time, hidden]
             encoder_mask: [batch, time] (mask cho encoder)
+            tfr: float (0.0 = no teacher forcing, 1.0 = full teacher forcing)
         """
         max_len = decoder_input.size(1)
         batch_size = decoder_input.size(0)
@@ -48,15 +50,26 @@ class AcousticDecoder(nn.Module):
         context = torch.zeros(batch_size, self.hidden_size).to(encoder_outputs.device)
 
         outputs = []
-        embedded = self.embedding(decoder_input)  # [B, max_len, embed]
-        embedded = self.embed_dropout(embedded)  # Apply dropout to target tokens
+        
+        # Khởi tạo với SOS token
+        current_input = decoder_input[:, 0]  # [batch] - SOS tokens
+        
         for t in range(max_len):
-            rnn_input = torch.cat([embedded[:, t, :], context], dim=1)
+            # Embed current input
+            embedded = self.embedding(current_input)  # [batch, embed_dim]
+            embedded = self.embed_dropout(embedded)
+            
+            # RNN forward
+            rnn_input = torch.cat([embedded, context], dim=1)
             h[0], c[0] = self.rnn[0](rnn_input, (h[0], c[0]))
+            h[0] = self.var_dropout(h[0]) 
+            
             for i in range(1, self.num_layers):
                 new_h, new_c = self.rnn[i](h[i-1], (h[i], c[i]))
                 h[i] = self.var_dropout(new_h)
                 c[i] = new_c
+                
+            # Attention
             query = h[-1].unsqueeze(1).unsqueeze(1)  # [B, 1, 1, hidden]
             key = value = encoder_outputs.unsqueeze(1)  # [batch, 1, time, hidden]
             if encoder_mask is not None:
@@ -65,11 +78,22 @@ class AcousticDecoder(nn.Module):
                 attn_mask = None
                 
             context, attn = self.attention(query, key, value, mask=attn_mask)
-            context = context.squeeze(1)  # [B, 1, hidden]
-            context = context.squeeze(1)  # [B, hidden]
+            context = context.squeeze(1).squeeze(1)  # [B, hidden]
+            
+            # Output projection
             char_input = torch.cat([h[-1], context], dim=1)
             output = self.mlp(char_input)
             outputs.append(output)
+            
+            # Decide next input token (except for last timestep)
+            if t < max_len - 1:
+                if random.random() < tfr:
+                    # Teacher forcing: use ground truth
+                    current_input = decoder_input[:, t + 1]
+                else:
+                    # No teacher forcing: use predicted token
+                    predicted_id = output.argmax(dim=-1)
+                    current_input = predicted_id
 
         logits = torch.stack(outputs, dim=1)  # [batch, max_len, vocab_size]
         return logits  # [B, max_len, vocab]

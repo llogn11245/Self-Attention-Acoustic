@@ -2,37 +2,6 @@ from .atten import MultiHeadAttention, MultiHeadAttentionBlock
 from .modules import PositionalEncoding, PositionwiseFeedForward, ResidualConnectionBase
 import torch
 import torch.nn as nn
-
-class EncoderLayer(nn.Module):
-    def __init__(self, n_head, d_model, d_hidden, dropout=0.1):
-        super(EncoderLayer, self).__init__()
-        self.mha = MultiHeadAttention(n_head, d_model, dropout)
-        self.ffn = PositionwiseFeedForward(d_model, d_hidden, dropout)
-        self.residual = nn.ModuleList(
-            ResidualConnectionBase(d_model, dropout) for _ in range(2)  
-        )
-        
-    def forward(self, x, mask=None):
-        atten_out, _ = self.mha(x, x, x, mask)
-        x = self.residual[0](x, atten_out)
-        x = self.residual[1](x, self.ffn(x))
-        return x
-
-class AcousticEncoder(nn.Module):
-    def __init__(self, n_head, d_model, d_hidden, dropout=0.1, n_layer=1):
-        super(AcousticEncoder, self).__init__()
-        self.pos_enc = PositionalEncoding(d_model)
-        self.layers = nn.ModuleList([
-            EncoderLayer(n_head, d_model, d_hidden, dropout) for _ in range(n_layer)
-        ])
-        self.linear = nn.Linear(d_model, d_hidden)
-
-    def forward(self, x, mask=None):
-        x = self.pos_enc(x)
-        for layer in self.layers:
-            x = layer(x, mask)
-        x = self.linear(x)
-        return x 
     
 class HybridEncoderLayer(nn.Module):
     def __init__(self, n_head, d_model, d_hidden, dropout=0.1):
@@ -73,13 +42,9 @@ def build_encoder(config):
         d_model = config['enc']['d_model']
         d_hidden = config['enc']['d_hidden']
         dropout = config['enc']['dropout']
-        type = config['enc']['type']
         n_layer = config['enc']['n_layer']
         vocab_size = config['vocab_size']
-        
-        if type == 'basic':
-            return AcousticEncoder(n_head, d_model, d_hidden, dropout, n_layer)
-        elif type == 'interleave_hybrid': 
-            return InterleaveHybridAcousticEncoder(n_head, d_model, d_hidden, vocab_size, dropout, n_layer)
+
+        return InterleaveHybridAcousticEncoder(n_head, d_model, d_hidden, vocab_size, dropout, n_layer)
     except KeyError as e:
         raise ValueError(f"Missing configuration parameter: {e}")

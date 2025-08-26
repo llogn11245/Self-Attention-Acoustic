@@ -35,16 +35,24 @@ def optional_file(filename):
 def main():
     parser = argparse.ArgumentParser(description="Inference script for RNN-T speech-to-text model")
     parser.add_argument('--config', required=True, help='Path to YAML config file')
-    parser.add_argument('--output', default=None, help='File to save predictions (optional)')
+    parser.add_argument('--epoch', type=int, default=1, help='Epoch number of the checkpoint to load')
+    parser.add_argument('--output', default=None, help='File to save predictions (optional, uses config if not specified)')
     args = parser.parse_args()
 
     full_cfg = load_config(args.config)
     model_cfg = full_cfg.get('model', full_cfg)
 
+    # Xác định output file path
+    if args.output is None:
+        # Lấy từ config nếu không truyền --output
+        output_file = full_cfg['training'].get('infer_path', None)
+    else:
+        output_file = args.output
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     #===Load Checkpoint===
-    checkpoint_path = os.path.join(full_cfg['training']['save_path'], f"SAA_epoch_8")
+    checkpoint_path = os.path.join(full_cfg['training']['save_path'], f"SAA_epoch_{args.epoch}")
     checkpoint = torch.load(checkpoint_path, map_location=device)
     state_dict = checkpoint.get('model_state_dict', checkpoint)
 
@@ -69,7 +77,7 @@ def main():
     pred_texts = []
     true_texts = []
 
-    with optional_file(args.output) as fout:
+    with optional_file(output_file) as fout:
         for batch in loader:
             speech = batch["fbank"].to(device)
             target_text = batch["text"].to(device)
@@ -104,8 +112,8 @@ def main():
                     fout.write(f"Ground truth: {true_text}\n")
                     fout.write("---------------\n")
 
-    if args.output:
-        print(f"Inference complete. Results saved to {args.output}")
+    if output_file:
+        print(f"Inference complete. Results saved to {output_file}")
     else:
         print("Inference complete. Results not saved to file.")
 

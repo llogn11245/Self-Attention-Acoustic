@@ -1,18 +1,18 @@
 model:
   enc: 
     n_head: 8
-    d_model: 80               
-    d_hidden: 256       
+    d_model: 512               
+    d_hidden: 1024       
     dropout: 0.2
     n_layer: 3
   dec: 
-    embed_dim: 128
-    d_hidden: 256
+    embed_dim: 512
+    d_hidden: 512
     num_layers: 2
     embed_dropout: 0.2
     var_dropout: 0.1
   vocab_size: 4866
-  feature_dim: 80   # sync with dataset.py
+  feature_dim: 160   # sync with dataset.py
   name : 'SAA'
   share_weight: False
   pad_id: 0
@@ -37,6 +37,7 @@ training:
   vocab_path : "workspace/dataset/vocab_w2i.json"
   cmvn_stats : "workspace/dataset/cmvn_stats.pt"
   log_path: "workspace/Self-Attention-Acoustic/logs"
+  infer_path: "workspace/Self-Attention-Acoustic/logs/results.txt"
   reload: False
 
 optim:
@@ -50,7 +51,7 @@ optim:
 
   type: adam
   lr: 0.0003
-  weight_decay: 0.0001
+  weight_decay: 0.0
   decay_rate: 0.5
 
 scheduler:
@@ -66,7 +67,7 @@ loss:
   type: kldiv 
   reduction: batchmean
   
-  ctc_weight: 0.3
+  ctc_weight: 0.4
   ctc_reduction: mean
 
   

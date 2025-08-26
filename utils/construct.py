@@ -22,7 +22,7 @@ def create_vocab(json_path):
         "<s>": 1,
         "</s>": 2,
         "<unk>": 3,
-        "<blank>" : 4
+        "<blank>" : 0
     }
 
     for idx, item in data.items():

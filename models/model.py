@@ -22,6 +22,7 @@ class AcousticModel(nn.Module):
 
         self.sos_id = config['sos_id']
         self.eos_id = config['eos_id']
+        self.blank_id = config['blank_id']
 
     def forward(self, inputs, input_lengths, decoder_input, target_lengths, encoder_mask=None, train=True, tfr=1.0):
         if train:
@@ -35,54 +36,34 @@ class AcousticModel(nn.Module):
     
     def recognize(self, enc_inputs, speech_length, target_length=100, enc_mask=None):
         """
-        Greedy decoding for inference
+        Greedy decode for inference
         Args:
-            enc_inputs: [batch, time, feature]
-            speech_length: [batch] - lengths of input sequences
-            target_length: [batch] - lengths of target sequences
-            enc_mask: [batch, time] - mask for encoder inputs
+            enc_inputs: [1, time, feature] - batch_size = 1
+            speech_length: [1] - lengths of input sequences
+            target_length: int - max target length
+            enc_mask: [1, time] - mask for encoder inputs
         Returns:
             list of lists: token IDs for each batch item
         """
         encoder_outputs, _ = self.encoder(enc_inputs, enc_mask)
-        batch_size = enc_inputs.size(0)
         device = enc_inputs.device
-        sos_id = self.sos_id
-        eos_id = self.eos_id
-
-        h = [torch.zeros(1, self.decoder.hidden_size).to(device) for _ in range(self.decoder.num_layers)]
-        c = [torch.zeros(1, self.decoder.hidden_size).to(device) for _ in range(self.decoder.num_layers)]
-        context = torch.zeros(1, self.decoder.hidden_size).to(device)
-
+        
+        # Khởi tạo decoder input với SOS token
+        decoder_input = torch.tensor([[self.sos_id]], device=device)  # [1, 1]
         token_list = []
-        current_token = sos_id 
-
-        for _ in range(target_length-1):  # -1 because we don't predict the EOS token
-            embedded = self.decoder.embedding(torch.tensor([current_token], device=device))
-            rnn_input = torch.cat([embedded, context], dim=1)
-
-            h[0], c[0] = self.decoder.rnn[0](rnn_input, (h[0], c[0]))
-            for i in range(1, self.decoder.num_layers):
-                h[i], c[i] = self.decoder.rnn[i](h[i-1], (h[i], c[i]))
-
-            query = h[-1].unsqueeze(0).unsqueeze(0)  # [1, 1, 1, hidden_size]
-            key = value = encoder_outputs.unsqueeze(0)  # [1, 1, time, hidden_size]
-            if enc_mask is not None:
-                attn_mask = enc_mask.unsqueeze(0)  # [1, 1, time]
-            else:
-                attn_mask = None
-            new_context, attn = self.decoder.attention(query, key, value, mask=attn_mask)
-            new_context = new_context.squeeze(1).squeeze(1)  # [1, hidden_size]
-
-            char_input = torch.cat([h[-1], new_context], dim=1)
-            output = self.decoder.mlp(char_input)
-            predicted_token = torch.argmax(output, dim=1).item()
-
+        
+        for step in range(target_length):
+            # Gọi decoder với tfr=0.0 (no teacher forcing)
+            with torch.no_grad():
+                logits = self.decoder(decoder_input, encoder_outputs, enc_mask, tfr=0.0)
+            
+            predicted_token = logits[:, -1, :].argmax(dim=-1).item()  
             token_list.append(predicted_token)
 
-            if predicted_token == eos_id:
+            if predicted_token == self.eos_id:
                 break
-
-            current_token = predicted_token
-
+            
+            new_token = torch.tensor([[predicted_token]], device=device)  # [1, 1]
+            decoder_input = torch.cat([decoder_input, new_token], dim=1)  # [1, step+2]
+        
         return [token_list]

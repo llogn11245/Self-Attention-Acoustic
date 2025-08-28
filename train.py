@@ -49,7 +49,7 @@ def train_one_epoch(model, dataloader, optimizer, criterion, criterion2, ctc_wei
         tokens = batch["tokens"].to(device)
         tokens_lens = batch["tokens_lens"].to(device)
 
-        enc_out, ctc_out, dec_out = model(speech, fbank_len.long(), decoder_input, text_len.long(), speech_mask, train=True, tfr=0.7)
+        enc_out, ctc_out, dec_out = model(speech, fbank_len.long(), decoder_input, text_len.long(), speech_mask, train=True, tfr=0.8)
 
         loss_kldiv = criterion(dec_out, target_text, fbank_len, text_len)
         loss_ctc = criterion2(ctc_out, tokens, fbank_len, tokens_lens)

@@ -64,8 +64,8 @@ def main():
 
     #===Load Data===
     dataset = Speech2Text(full_cfg['training']['test_path'], 
-                          full_cfg['training']['vocab_path'], 
-                          full_cfg['training']['cmvn_stats'])
+                          full_cfg['training']['vocab_path']
+                          )
     itos    = dataset.vocab.itos
     eos_id  = dataset.vocab.get_eos_token()
 

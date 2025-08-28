@@ -20,17 +20,15 @@ class HybridEncoderLayer(nn.Module):
         return out
     
 class InterleaveHybridAcousticEncoder(nn.Module):
-    def __init__(self, n_head, d_feature, d_model, d_hidden, vocab_size, dropout=0.1, n_layer=1):
+    def __init__(self, n_head, d_model, d_hidden, vocab_size, dropout=0.1, n_layer=1):
         super(InterleaveHybridAcousticEncoder, self).__init__()
         self.layers = nn.ModuleList([
             HybridEncoderLayer(n_head, d_model, d_hidden, dropout) for _ in range(n_layer)
         ])
-        self.linear1 = nn.Linear(d_feature, d_model)
         self.linear2 = nn.Linear(d_model, d_hidden)
         self.ctc_proj = nn.Linear(d_hidden, vocab_size)
 
     def forward(self, x, mask=None): 
-        x = self.linear1(x)  # [B, T, d_model]
         for layer in self.layers:
             x = layer(x, mask)
         out = self.linear2(x)
@@ -46,8 +44,7 @@ def build_encoder(config):
         dropout = config['enc']['dropout']
         n_layer = config['enc']['n_layer']
         vocab_size = config['vocab_size']
-        d_feature = config['feature_dim']
 
-        return InterleaveHybridAcousticEncoder(n_head, d_feature, d_model, d_hidden, vocab_size, dropout, n_layer)
+        return InterleaveHybridAcousticEncoder(n_head, d_model, d_hidden, vocab_size, dropout, n_layer)
     except KeyError as e:
         raise ValueError(f"Missing configuration parameter: {e}")

@@ -34,9 +34,14 @@ def optional_file(filename):
 
 def main():
     parser = argparse.ArgumentParser(description="Inference script for RNN-T speech-to-text model")
-    parser.add_argument('--config', required=True, help='Path to YAML config file')
-    parser.add_argument('--epoch', type=int, default=1, help='Epoch number of the checkpoint to load')
-    parser.add_argument('--output', default=None, help='File to save predictions (optional, uses config if not specified)')
+    parser.add_argument('--config', required=True, 
+                        help='Path to YAML config file')
+    parser.add_argument('--epoch', type=int, default=1, 
+                        help='Epoch number of the checkpoint to load')
+    parser.add_argument('--output', default=None, 
+                        help='File to save predictions (optional, uses config if not specified)')
+    parser.add_argument('--output', nargs='?', const='__USE_CONFIG__', default=None,
+                        help='File to save predictions. If no value is given, use config. If omitted, no file will be saved.')
     args = parser.parse_args()
 
     full_cfg = load_config(args.config)
@@ -44,9 +49,13 @@ def main():
 
     # Xác định output file path
     if args.output is None:
-        # Lấy từ config nếu không truyền --output
-        output_file = full_cfg['training'].get('infer_path', None)
+        # không truyền --output -> không lưu
+        output_file = None
+    elif args.output == '__USE_CONFIG__':
+        # truyền --output nhưng không có giá trị -> lấy từ config
+        output_file = full_cfg['training']['infer_path']
     else:
+        # truyền --output kèm giá trị -> dùng giá trị này
         output_file = args.output
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

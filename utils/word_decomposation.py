@@ -414,3 +414,15 @@ def analyse_Vietnamese(syllable: str) -> tuple[str]:
         return initial, rhyme, tone
     
     return None
+
+def combine_components(initial: str, rhyme: str, tone: str) -> str:
+    tone_map = {
+        "-": None,      
+        "˨˩": "<`>",     
+        "˧˩": "<?>",     
+        "˧ˀ˥": "<~>",    
+        "˧˥": "</>",     
+        "˧ˀ˩": "<.>",    
+    }
+
+    tone = tone_map[tone]

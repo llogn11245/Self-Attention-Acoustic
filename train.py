@@ -140,8 +140,8 @@ def main():
         batch_size=training_cfg['batch_size'],
         shuffle=True,
         collate_fn=speech_collate_fn,
-        num_workers=0,
-        pin_memory=True
+        num_workers=2,
+        pin_memory=False
     )
 
     dev_dataset = Speech2Text(
@@ -154,8 +154,8 @@ def main():
         batch_size=training_cfg['batch_size'],
         shuffle=True,
         collate_fn=speech_collate_fn,
-        num_workers=0,
-        pin_memory=True
+        num_workers=2,
+        pin_memory=False
     )
 
     # ==== Model ====

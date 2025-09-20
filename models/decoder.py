@@ -98,9 +98,8 @@ class AcousticDecoder(nn.Module):
         logits = torch.stack(outputs, dim=1)  # [batch, max_len, vocab_size]
         return logits  # [B, max_len, vocab]
     
-def build_decoder(config):
+def build_decoder(config, vocab_size):
     try: 
-        vocab_size = config['vocab_size']
         embedding_dim = config['dec']['embed_dim']
         hidden_size = config['dec']['d_hidden']
         num_layers = config['dec']['num_layers']

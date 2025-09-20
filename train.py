@@ -124,7 +124,7 @@ def main():
         level=logging.INFO,
         format="%(asctime)s - %(message)s",
         handlers=[
-            logging.FileHandler(log_file),
+            logging.Fil eHandler(log_file),
             logging.StreamHandler()  # vẫn in ra màn hình
         ]
     )
@@ -158,8 +158,10 @@ def main():
         pin_memory=False
     )
 
+    vocab_size = len(train_dataset.vocab)
+
     # ==== Model ====
-    model = AcousticModel(config['model'])
+    model = AcousticModel(config['model'], vocab_size)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 

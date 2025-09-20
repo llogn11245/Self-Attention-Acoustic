@@ -7,10 +7,10 @@ from .encoder import build_encoder
 from utils.dataset import SpecAugment
 
 class AcousticModel(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config, vocab_size):
         super(AcousticModel, self).__init__()
-        self.encoder = build_encoder(config)
-        self.decoder = build_decoder(config)
+        self.encoder = build_encoder(config, vocab_size)
+        self.decoder = build_decoder(config, vocab_size)
 
         self.spec_augment = SpecAugment(
             spec_augment=config.get("spec_augment", True),

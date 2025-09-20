@@ -13,7 +13,7 @@ def load_config(path):
     with open(path, 'r') as f:
         return yaml.safe_load(f)
 
-def ids_to_text(ids, itos, eos_id=None):
+def ids_to_text(ids, itos, type, eos_id=None):
     tokens = []
     for idx in ids:
         if eos_id is not None and idx == eos_id:
@@ -22,9 +22,10 @@ def ids_to_text(ids, itos, eos_id=None):
         if token in ['<pad>','<s>','</s>','<unk>','<blank>']:
             continue
         tokens.append(token)
-        
-    joined = ''.join(tokens).replace('<space>', ' ').strip()
-
+    if type == 'char' or type == 'phoneme':
+        joined = ''.join(tokens).replace('<space>', ' ').strip()
+    elif type == 'word':
+        joined = ' '.join(tokens).strip()
     return joined
 
 @contextmanager
@@ -39,6 +40,8 @@ def main():
     parser = argparse.ArgumentParser(description="Inference script for RNN-T speech-to-text model")
     parser.add_argument('--config', required=True, 
                         help='Path to YAML config file')
+    parser.add_argument('--type', type=str, required=True, choices=['char', 'phoneme', 'word'],
+                        help='type to evaluate: char, phoneme, word')
     parser.add_argument('--epoch', type=int, default=1, 
                         help='Epoch number of the checkpoint to load')
     parser.add_argument('--output', nargs='?', const='__USE_CONFIG__', default=None,
@@ -61,23 +64,23 @@ def main():
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+    #===Load Data to get vocab_size===
+    dataset = Speech2Text(full_cfg['training']['test_path'], 
+                          full_cfg['training']['vocab_path'])
+    itos = dataset.vocab.itos
+    eos_id = dataset.vocab.get_eos_token()
+    vocab_size = len(dataset.vocab)
+
     #===Load Checkpoint===
     checkpoint_path = os.path.join(full_cfg['training']['save_path'], f"SAA_epoch_{args.epoch}")
     checkpoint = torch.load(checkpoint_path, map_location=device)
     state_dict = checkpoint.get('model_state_dict', checkpoint)
 
     #===Load Model===
-    model = AcousticModel(model_cfg)
+    model = AcousticModel(model_cfg, vocab_size)  # Add vocab_size parameter
     model.load_state_dict(state_dict)
     model.to(device)
     model.eval()
-
-    #===Load Data===
-    dataset = Speech2Text(full_cfg['training']['test_path'], 
-                          full_cfg['training']['vocab_path']
-                          )
-    itos    = dataset.vocab.itos
-    eos_id  = dataset.vocab.get_eos_token()
 
     loader = DataLoader(dataset,
                         batch_size=1,
@@ -107,8 +110,8 @@ def main():
                 pred_ids = batch_preds[i]
                 true_ids = batch['text'][i].tolist()
 
-                pred_text = ids_to_text(pred_ids, itos, eos_id=eos_id)
-                true_text = ids_to_text(true_ids, itos, eos_id=eos_id)
+                pred_text = ids_to_text(pred_ids, itos, args.type, eos_id=eos_id)  # Use args.type
+                true_text = ids_to_text(true_ids, itos, args.type, eos_id=eos_id)  # Use args.type
 
                 pred_texts.append(pred_text)
                 true_texts.append(true_text)

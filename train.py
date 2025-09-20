@@ -124,7 +124,7 @@ def main():
         level=logging.INFO,
         format="%(asctime)s - %(message)s",
         handlers=[
-            logging.Fil eHandler(log_file),
+            logging.FileHandler(log_file),
             logging.StreamHandler()  # vẫn in ra màn hình
         ]
     )

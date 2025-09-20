@@ -34,7 +34,7 @@ training:
   dev_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/test_phoneme.json"
   test_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/test_phoneme.json"
   vocab_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/vocab_phoneme.json"
-  infer_path: "C:/paper/self-acoustic/logs"
+  infer_path: "C:/paper/self-acoustic/logs/results.txt"
   log_path: "C:/paper/self-acoustic/logs"
   reload: False
 

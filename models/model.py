@@ -52,7 +52,7 @@ class AcousticModel(nn.Module):
         decoder_input = torch.tensor([[self.sos_id]], device=device)  # [1, 1]
         token_list = []
         
-        for step in range(target_length):
+        for step in range(500):
             # Gọi decoder với tfr=0.0 (no teacher forcing)
             with torch.no_grad():
                 logits = self.decoder(decoder_input, encoder_outputs, enc_mask, tfr=0.0)

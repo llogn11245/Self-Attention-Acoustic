@@ -22,7 +22,10 @@ def ids_to_text(ids, itos, eos_id=None):
         if token in ['<pad>','<s>','</s>','<unk>','<blank>']:
             continue
         tokens.append(token)
-    return ' '.join(tokens)
+        
+    joined = ''.join(tokens).replace('<space>', ' ').strip()
+
+    return joined
 
 @contextmanager
 def optional_file(filename):
@@ -38,8 +41,6 @@ def main():
                         help='Path to YAML config file')
     parser.add_argument('--epoch', type=int, default=1, 
                         help='Epoch number of the checkpoint to load')
-    parser.add_argument('--output', default=None, 
-                        help='File to save predictions (optional, uses config if not specified)')
     parser.add_argument('--output', nargs='?', const='__USE_CONFIG__', default=None,
                         help='File to save predictions. If no value is given, use config. If omitted, no file will be saved.')
     args = parser.parse_args()
@@ -121,16 +122,19 @@ def main():
                     fout.write(f"Ground truth: {true_text}\n")
                     fout.write("---------------\n")
 
-    if output_file:
-        print(f"Inference complete. Results saved to {output_file}")
-    else:
-        print("Inference complete. Results not saved to file.")
+        if output_file:
+            print(f"Inference complete. Results saved to {output_file}")
+        else:
+            print("Inference complete. Results not saved to file.")
 
-    #===TÍNH WER VÀ CER===
-    overall_wer = wer(true_texts, pred_texts)
-    overall_cer = cer(true_texts, pred_texts)
-    print(f"Word Error Rate (WER): {overall_wer:.4f}")
-    print(f"Character Error Rate (CER): {overall_cer:.4f}")
-
+        #===TÍNH WER VÀ CER===
+        overall_wer = wer(true_texts, pred_texts)
+        overall_cer = cer(true_texts, pred_texts)
+        print(f"Word Error Rate (WER): {overall_wer:.4f}")
+        print(f"Character Error Rate (CER): {overall_cer:.4f}")
+        if fout:
+            fout.write(f"Word Error Rate (WER): {overall_wer:.4f}\n")
+            fout.write(f"Character Error Rate (CER): {overall_cer:.4f}\n") 
+            
 if __name__ == '__main__':
     main()

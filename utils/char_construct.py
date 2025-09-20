@@ -22,7 +22,8 @@ def create_vocab(json_path):
         "<s>": 1,
         "</s>": 2,
         "<unk>": 3,
-        "<blank>" : 4
+        "<blank>" : 0, 
+        "<space>": 5
     }
 
     for idx, item in data.items():
@@ -48,7 +49,14 @@ def process_data(data_path, vocab, default_data_path, save_path):
         data_res = {}
         text = normalize_transcript(item['script'])
         unk_id = vocab["<unk>"]
-        tokens = [vocab.get(word, unk_id) for word in text.strip()]
+        tokens = [] 
+        words = text.split()
+        for i, w in enumerate(words): 
+            for ch in w: 
+                tokens.append(vocab.get(ch, unk_id))
+            if i < len(words) - 1: 
+                tokens.append(vocab["<space>"])
+
         data_res['encoded_text'] = tokens
         data_res['text'] = text
         data_res['wav_path'] = os.path.join(default_data_path, item['voice'])
@@ -58,15 +66,15 @@ def process_data(data_path, vocab, default_data_path, save_path):
     print(f"Data saved to {save_path}")
 
 
-vocab = create_vocab(r"C:\paper\raw_data\Vietnamese-Speech-to-Text-datasets\ViVOS\train.json")
-save_data(vocab, r"C:\paper\raw_data\Vietnamese-Speech-to-Text-datasets\ViVOS\vocab_char.json")
+vocab = create_vocab(r"workspace/dataset/train.json")
+save_data(vocab, r"workspace/dataset/vocab_c2i.json")
 
-process_data(r"C:\paper\raw_data\Vietnamese-Speech-to-Text-datasets\ViVOS\train.json",
+process_data(r"workspace/dataset/train.json",
              vocab,
-             r"C:\paper\raw_data\Vietnamese-Speech-to-Text-datasets\ViVOS\voices",
-             r"C:\paper\raw_data\Vietnamese-Speech-to-Text-datasets\ViVOS\train_char.json")
+             r"workspace/dataset/voices",
+             r"workspace/dataset/train_c2i.json")
 
-process_data(r"C:\paper\raw_data\Vietnamese-Speech-to-Text-datasets\ViVOS\train.json",
+process_data(r"workspace/dataset/test.json",
              vocab,
-             r"C:\paper\raw_data\Vietnamese-Speech-to-Text-datasets\ViVOS\voices",
-             r"C:\paper\raw_data\Vietnamese-Speech-to-Text-datasets\ViVOS\test_char.json")
+             r"workspace/dataset/voices",
+             r"workspace/dataset/test_c2i.json")

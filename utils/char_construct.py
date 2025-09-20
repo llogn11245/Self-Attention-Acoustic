@@ -2,7 +2,7 @@ import json
 import re
 def normalize_transcript(text):
     text = text.lower()
-    text = re.sub(r"[\'\"(),.!?]", " ", text)
+    text = re.sub(r"[\'\"(),.!?:]", " ", text)
     text = re.sub(r"\s+", " ", text)  # loại bỏ khoảng trắng dư
     return text.strip()
 
@@ -22,7 +22,7 @@ def create_vocab(json_path):
         "<s>": 1,
         "</s>": 2,
         "<unk>": 3,
-        "<blank>" : 0, 
+        "<blank>" : 4, 
         "<space>": 5
     }
 

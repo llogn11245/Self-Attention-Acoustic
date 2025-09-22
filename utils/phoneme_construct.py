@@ -25,8 +25,8 @@ def create_vocab(json_path, wrong2correct):
         "<s>": 1,
         "</s>": 2,
         "<unk>": 3,
-        "<space>": 4,
-        "<blank>" : 0
+        "<blank>" : 0,
+        "<space>": 5
     }
 
     for idx, item in data.items():

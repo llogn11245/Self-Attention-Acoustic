@@ -3,26 +3,32 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class CELoss(nn.Module):
-    def __init__(self, ignore_index=None, reduction='mean'):
+    def __init__(self, ignore_index=4, reduction="mean", label_smoothing=0.1):
+        """
+        Cross Entropy Loss cho bài toán sequence labeling
+        
+        Args:
+            ignore_index (int): Chỉ số của các phần tử cần bỏ qua (thường dùng cho padding)
+            reduction (str): Phương thức giảm kích thước ('mean', 'sum', 'none')
+        """
         super(CELoss, self).__init__()
         self.ignore_index = ignore_index
         self.reduction = reduction
+        self.label_smoothing = label_smoothing
 
-    def forward(self, logits, targets):
-        """
-        Args:
-            logits (Tensor): Logits shape (N, C)/(N,T,C)
-        """
-        if logits.dim() == 3:
-            logits = logits.transpose(1,2)
+    def forward(self, logits, targets, input_lengths=None, target_lengths=None):
+        # Chuyển đổi kích thước logits để phù hợp với CrossEntropyLoss
+        # [B, T, C] -> [B, C, T] (theo yêu cầu của nn.CrossEntropyLoss)
+        logits = logits.transpose(1, 2)  # [batch_size, vocab_size, sequence_length]
         
-        # print(logits.shape, targets.shape)
-        loss = F.cross_entropy(
-            logits,
-            targets,
+        # Tính loss
+        loss_fn = nn.CrossEntropyLoss(
             ignore_index=self.ignore_index,
             reduction=self.reduction,
+            label_smoothing=self.label_smoothing
         )
+        loss = loss_fn(logits, targets)
+        
         return loss
 
 class KLDivLoss(nn.Module):
@@ -69,12 +75,10 @@ class CTCLoss(nn.Module):
     
 def build_loss(config):
     if config['type'] == 'ce_loss':
-        print("Using Cross Entropy Loss")
         return CELoss(
             ignore_index= config['blank'],
             reduction= config['reduction'],
             label_smoothing= config['label_smoothing']
         )
     elif config['type'] == 'kldiv_loss':
-        print("Using KL Divergence Loss")
         return KLDivLoss(reduction= config['reduction'])

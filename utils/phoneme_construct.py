@@ -4,7 +4,7 @@ from word_decomposation import analyse_Vietnamese
 
 def normalize_transcript(text):
     text = text.lower()
-    text = re.sub(r"[\'\"(),.!?:]", " ", text)
+    text = re.sub(r"[\'\"(),.!?]", " ", text)
     text = re.sub(r"\s+", " ", text)  # loại bỏ khoảng trắng dư
     return text.strip()
 
@@ -25,8 +25,8 @@ def create_vocab(json_path, wrong2correct):
         "<s>": 1,
         "</s>": 2,
         "<unk>": 3,
-        "<blank>" : 0,
-        "<space>": 5
+        "<space>": 4,
+        "<blank>" : 5
     }
 
     for idx, item in data.items():
@@ -62,7 +62,7 @@ def save_data(data, data_path):
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 import os
-def process_data(data_path, vocab, default_data_path, save_path):
+def process_data(data_path, vocab, default_data_path, save_path, type = "stack"):
     data = load_json(data_path)
 
     res = []
@@ -71,24 +71,23 @@ def process_data(data_path, vocab, default_data_path, save_path):
         data_res = {}
         text = normalize_transcript(item['script'])
         unk_id = vocab["<unk>"]
-        space_id = vocab["<space>"]
+        # tokens = [vocab.get(word, unk_id) for word in text.split()]
 
         tokens = []
-        words = text.split()
-        for i, word in enumerate(words):
+        for word in text.split():
             try:
                 initial, rhyme, tone = analyse_Vietnamese(word)
-                tokens.append(vocab.get(initial, unk_id))
-                tokens.append(vocab.get(rhyme, unk_id))
-                tokens.append(vocab.get(tone, unk_id))
-                
-                # Thêm token <space> sau mỗi từ, trừ từ cuối cùng
-                if i < len(words) - 1:
-                    tokens.append(space_id)
+                word_list = [vocab.get(initial, unk_id), vocab.get(rhyme, unk_id), vocab.get(tone, unk_id)]
+                if type == "stack":
+                    tokens.append(word_list)
+                else:
+                    tokens += word_list
+                    tokens += [vocab["<space>"]]
             except:
                 continue
 
-        data_res['encoded_text'] = tokens
+
+        data_res['encoded_text'] = tokens[:-1] if type != "stack" else tokens
         data_res['text'] = text
         data_res['wav_path'] = os.path.join(default_data_path, item['voice'])
         res.append(data_res)
@@ -120,18 +119,19 @@ wrong2correct = {
     "pin": "bin"
 }
 
+vocab, unprocossed = create_vocab("/mnt/c/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/train.json", wrong2correct)
+save_data(vocab, "/mnt/c/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/vocab_phoneme.json")
 
-vocab, unprocossed = create_vocab("workspace/dataset/train.json", wrong2correct)
-save_data(vocab, "workspace/dataset/vocab_phoneme.json")
-
-process_data("workspace/dataset/train.json",
+process_data("/mnt/c/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/train.json",
              vocab,
-             "workspace/dataset/voices",
-             "workspace/dataset/train_phoneme.json")
+             "/mnt/c/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/voices",
+             "/mnt/c/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/train_phoneme.json",
+             type="flat")
 
-process_data("workspace/dataset/test.json",
+process_data("/mnt/c/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/test.json",
              vocab,
-             "workspace/dataset/voices",
-             "workspace/dataset/test_phoneme.json")
+             "/mnt/c/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/voices",
+             "/mnt/c/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/test_phoneme.json",
+             type="flat")
 
 print("Unprocessed words:", unprocossed)

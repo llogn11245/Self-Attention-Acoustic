@@ -57,12 +57,13 @@ scheduler:
   n_warmup_steps: 15000
 
 loss:
-  # type: cross_entropy 
+# If using CE_loss, set ctc_weight to 0
+  # type: ce_loss
   # blank: 4
   # reduction: mean
   # label_smoothing: 0.1
 
-  type: kldiv 
+  type: kldiv_loss
   reduction: batchmean
   
   ctc_weight: 0.4

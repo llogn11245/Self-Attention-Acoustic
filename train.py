@@ -53,7 +53,7 @@ def train_one_epoch(model, dataloader, optimizer, criterion, criterion2, ctc_wei
 
         loss_kldiv = criterion(dec_out, target_text, fbank_len, text_len)
         loss_ctc = criterion2(ctc_out, tokens, fbank_len, tokens_lens)
-        loss = loss_ctc * ctc_weight + loss_kldiv * (1- ctc_weight)
+        loss = sum(loss_ctc * ctc_weight + loss_kldiv * (1- ctc_weight))
         loss.backward()
 
         if ((id + 1) % accum_steps == 0) or ((id + 1) == len(dataloader)):

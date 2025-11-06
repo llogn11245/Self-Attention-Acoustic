@@ -24,8 +24,9 @@ def ids_to_text(ids, itos, type, eos_id=None):
         tokens.append(token)
     if type == 'char' or type == 'phoneme':
         joined = ''.join(tokens).replace('<space>', ' ').strip()
-    elif type == 'word':
+    else:
         joined = ' '.join(tokens).strip()
+
     return joined
 
 @contextmanager
@@ -83,7 +84,7 @@ def main():
     model.eval()
 
     loader = DataLoader(dataset,
-                        batch_size=1,
+                        batch_size=full_cfg['training'].get('batch_size', 1),
                         shuffle=False,
                         collate_fn=speech_collate_fn)
 
@@ -93,18 +94,10 @@ def main():
     with optional_file(output_file) as fout:
         for batch in loader:
             speech = batch["fbank"].to(device)
-            target_text = batch["text"].to(device)
             speech_mask = batch["fbank_mask"].to(device)
-            text_mask = batch["text_mask"].to(device)
-            fbank_len = batch["fbank_len"].to(device)
-            text_len = batch["text_len"].to(device)
-            decoder_input = batch["decoder_input"].to(device)
 
             with torch.no_grad():
-                batch_preds = model.recognize(enc_inputs=speech, 
-                                              speech_length=fbank_len, 
-                                              target_length=text_len, 
-                                              enc_mask=speech_mask)
+                batch_preds = model.recognize(speech, speech_mask)
 
             for i in range(len(batch_preds)):
                 pred_ids = batch_preds[i]

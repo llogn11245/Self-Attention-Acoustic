@@ -28,7 +28,6 @@ model:
 training:
   epochs: 100
   batch_size: 1
-  accumulation_steps: 1
   save_path: "C:/paper/self-acoustic/save_folder"
   train_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/train_phoneme.json"
   dev_path : "C:/paper/raw_data/Vietnamese-Speech-to-Text-datasets/ViVOS/test_phoneme.json"

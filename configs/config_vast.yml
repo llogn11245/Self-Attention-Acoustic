@@ -28,7 +28,6 @@ model:
 training:
   epochs: 100
   batch_size: 8
-  accumulation_steps: 1
   save_path: "workspace/Self-Attention-Acoustic/saves"
   train_path : "workspace/dataset/train_w2i.json"
   dev_path : "workspace/dataset/test_w2i.json"

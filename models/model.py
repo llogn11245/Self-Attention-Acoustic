@@ -76,22 +76,16 @@ class AcousticModel(nn.Module):
             next_tokens = torch.argmax(next_logits, dim=-1)  # [B]
     
             # Gán blank cho những chuỗi đã hoàn thành
-            next_tokens = next_tokens.masked_fill(finished, self.blank_id)
+            next_tokens = next_tokens.masked_fill(finished | (next_tokens == self.sos_id) | (next_tokens == self.blank_id), self.blank_id)
     
             # Cập nhật finished
             finished |= (next_tokens == self.eos_id)
-    
-            # Append token vào danh sách
-            for i in range(B):
-                token = next_tokens[i].item()
-                if token not in [self.sos_id, self.blank_id, self.eos_id]:
-                    token_lists[i].append(token)
-    
+
             # Thêm token vào input decoder
             next_tokens = next_tokens.unsqueeze(1)  # [B, 1]
             decoder_input = torch.cat([decoder_input, next_tokens], dim=1)
-    
+
             if finished.all():
                 break
     
-        return token_lists
+        return decoder_input.cpu().numpy()

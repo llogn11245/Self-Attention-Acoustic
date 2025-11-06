@@ -19,7 +19,7 @@ def ids_to_text(ids, itos, type, eos_id=None):
         if eos_id is not None and idx == eos_id:
             break
         token = itos.get(idx, '')
-        if token in ['<pad>','<s>','</s>','<unk>','<blank>']:
+        if token in ['<pad>','<s>','</s>','<blank>']:
             continue
         tokens.append(token)
     if type == 'char' or type == 'phoneme':

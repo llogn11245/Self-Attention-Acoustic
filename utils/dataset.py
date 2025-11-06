@@ -23,6 +23,7 @@ class Vocab:
         self.vocab = load_json(vocab_path)
         self.itos = {v: k for k, v in self.vocab.items()}
         self.stoi = self.vocab
+
     def get_sos_token(self):
         return self.stoi["<s>"]
     def get_eos_token(self):
@@ -31,6 +32,8 @@ class Vocab:
         return self.stoi["<pad>"]
     def get_unk_token(self):
         return self.stoi["<unk>"]
+    def get_blank_token(self):
+        return self.stoi["<blank>"]
     def __len__(self):
         return len(self.vocab)
 
